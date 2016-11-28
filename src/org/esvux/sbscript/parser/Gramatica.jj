@@ -1,0 +1,282 @@
+  options {
+    IGNORE_CASE = true;
+    STATIC = false;
+  }
+
+  PARSER_BEGIN(ParserLenguaje)
+  package org.esvux.sbscript.parser;
+
+  public class ParserLenguaje {
+      
+    public static void main(String args[]) throws ParseException {
+      ParserLenguaje parser = new ParserLenguaje(
+        new java.io.StringReader("Num a,b,c;")
+      );
+      parser.PROGRAMA();
+      System.out.println("Análisis concluido!!");
+    }
+
+  }
+  PARSER_END(ParserLenguaje)
+
+  void PROGRAMA():{}
+  {
+    (
+      LOOKAHEAD(2)
+      DEC_GLOBAL()
+    |
+      METODO()
+    |
+      PRINCIPAL()
+    )+
+  }
+
+  void DEC_GLOBAL():{}
+  {
+    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ]";"
+  }
+
+  void TIPO_VAR():{}
+  {
+    <T_NUM> | <T_STR> | <T_BOOL>    
+  }
+
+  void METODO():{}
+  {
+    TIPO_MET() <ID> "(" [ TIPO_VAR() <ID> ( "," TIPO_VAR() <ID> )* ] ")"
+    "{" /* Sentencias */ "}"
+  }
+
+  void TIPO_MET():{}
+  {
+    <T_NUM> | <T_STR> | <T_BOOL> | <T_VOID>
+  }
+
+  void PRINCIPAL():{}
+  {
+    <PR_PRINCIPAL> "(" ")" 
+    "{" /* Sentencias */ "}"
+  }
+
+  void CUERPO():{}
+  {
+    "{" SENTENCIAS() "}" 
+  }
+
+  void SENTENCIAS():{}
+  {
+    ( LOOKAHEAD(2)
+      ASIGNACION() ";"
+    |
+      LLAMADA() ";"
+    |
+      DEC_LOCAL() ";"
+    |
+      RETORNO() ";"
+    |
+      MOSTRAR() ";"
+    |
+      SI()
+    |
+      SELECCIONA()
+    |
+      MIENTRAS()
+    |
+      PARA()
+    )
+  }
+
+  void DEC_LOCAL():{}
+  {
+    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ]
+  }
+
+  void ASIGNACION():{}
+  {
+    <ID> "=" EXP()
+  }
+
+  void LLAMADA():{}
+  {
+    <ID> "(" [ EXP() ( "," EXP() )* ] ")"
+  }
+
+  void RETORNO():{}
+  {
+    <PR_RETORNO> EXP()
+  }
+
+  void MOSTRAR():{}
+  {
+    <PR_MOSTRAR> "(" EXP() ( "," EXP() )* ")"
+  }
+
+  void SI():{}
+  {
+    <PR_SI> "(" EXP() ")" CUERPO() [ <PR_SINO> CUERPO() ]
+  }
+
+  void SELECCIONA():{}
+  {
+    <PR_SELECCIONA> "(" EXP() ")" 
+      ( NATIVO() ":" CUERPO() )+
+  }
+
+  void MIENTRAS():{}
+  {
+    <PR_MIENTRAS> "(" EXP() ")" CUERPO()
+  }
+
+  void PARA():{}
+  {
+    <PR_PARA> "(" <T_NUM> <ID> "=" EXP() ";" EXP() ";" ( <INCREMENTO> | <DECREMENTO> ) ")" CUERPO()
+  }
+
+  void EXP():{}
+  {
+    LOG_OR()
+  }
+
+  void LOG_OR():{}
+  {
+    LOG_AND() ( "||" LOG_AND() )*
+  }
+
+  void LOG_AND():{}
+  {
+    LOG_XOR() ( "&&" LOG_XOR() )*
+  }
+
+  void LOG_XOR():{}
+  {
+    LOG_NOT() ( "¿?" LOG_NOT() )*
+  }
+
+  void LOG_NOT():{}
+  {
+    ( "!" RELACIONAL() )+
+  }
+
+  void RELACIONAL():{}
+  {
+    ARITM() OP_REL() ARITM()
+  }
+
+  void OP_REL():{}
+  {
+    ( "==" | "!=" | ">" | ">=" | "<" | "<=" )
+  }
+
+  void ARITM():{}
+  {
+    TERM() 
+      ( 
+        "+" TERM() 
+      |
+        "-" TERM()
+      )*
+  }
+
+  void TERM():{}
+  {
+    FACT()
+      (
+        "*" FACT()
+      |
+        "/" FACT()
+      |
+        "%" FACT()
+      )*
+  }
+
+  void FACT():{}
+  {
+    VAL() 
+      ( "^" VAL() )*
+  }
+
+  void VAL():{}
+  {
+    (
+      "(" EXP() ")"
+    |
+      "-" VAL()
+    |
+      <ID> [ "(" [ EXP() ( "," EXP() )* ] ")" ]
+    |
+      NATIVO()
+    )
+  }
+
+  void NATIVO():{}
+  {
+    <NUMERO> | <CADENA> | <TRUE> | <FALSE>
+  }
+    
+  //--------------------------------------
+  //         Expresiones léxicas
+  //--------------------------------------
+  TOKEN:{
+      < T_NUM : "Num" >
+    | < T_STR : "Str" >
+    | < T_BOOL : "Bool" >
+    | < T_VOID : "Void" >
+    | < PR_PRINCIPAL : "Principal" >
+    | < PR_MOSTRAR : "Mostrar" >
+    | < PR_RETORNO : "Retorno" >
+    | < PR_SI : "Si" >
+    | < PR_SINO : "Sino" >
+    | < PR_SELECCIONA : "Selecciona" >
+    | < PR_MIENTRAS : "Mientras" >
+    | < PR_PARA : "Para" >
+    | < DECREMENTO : "--" >
+    | < INCREMENTO : "++" >
+    | < TRUE : "true" >
+    | < FALSE : "false" >
+    | < NUMERO  : (["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ >
+    | < CADENA  : "\"" ( (~["\"","\\","\n","\r"]) | ("\\" ["n","t","v","b","r","f","a","\\","?","'","\""] ) )* "\"">
+    | < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>
+  }
+
+  //--------------------------------------
+  //           Tokens ignorados
+  //--------------------------------------
+  SKIP: { " " | "\n" | "\t" | "\r" }
+
+  //--------------------------------------
+  //       Definición de comentarios
+  //--------------------------------------
+  MORE :
+  {
+    "//" : IN_SINGLE_LINE_COMMENT
+  |
+    <"/*" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+  |
+    "*/" : IN_MULTI_LINE_COMMENT
+  }
+
+  <IN_SINGLE_LINE_COMMENT>
+  SPECIAL_TOKEN :
+  {
+    <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
+  }
+
+  <IN_FORMAL_COMMENT>
+  SPECIAL_TOKEN :
+  {
+    <FORMAL_COMMENT: "*/" > : DEFAULT
+  }
+
+  <IN_MULTI_LINE_COMMENT>
+  SPECIAL_TOKEN :
+  {
+    <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+  }
+
+  <IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+  MORE :
+  {
+    < ~[] >
+  }
+
+
