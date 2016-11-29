@@ -6,8 +6,16 @@
   PARSER_BEGIN(ParserLenguaje)
   package org.esvux.sbscript.parser;
 
+  import org.esvux.sbscript.ast.Nodo;
+  import org.esvux.sbscript.ast.FabricaNodos;
+  import org.esvux.sbscript.ast.Constantes;
+
   public class ParserLenguaje {
-      
+
+    private void reportarError(String errorString){
+      System.err.println(errorString);
+    }
+
     public static void main(String args[]) throws ParseException {
       ParserLenguaje parser = new ParserLenguaje(
         new java.io.StringReader("Num a,b,c;")
@@ -33,7 +41,7 @@
 
   void DEC_GLOBAL():{}
   {
-    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ]";"
+    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ] <PYC>
   }
 
   void TIPO_VAR():{}
@@ -44,7 +52,7 @@
   void METODO():{}
   {
     TIPO_MET() <ID> "(" [ TIPO_VAR() <ID> ( "," TIPO_VAR() <ID> )* ] ")"
-    "{" /* Sentencias */ "}"
+    "{" SENTENCIAS() "}"
   }
 
   void TIPO_MET():{}
@@ -54,8 +62,8 @@
 
   void PRINCIPAL():{}
   {
-    <PR_PRINCIPAL> "(" ")" 
-    "{" /* Sentencias */ "}"
+    <PR_PRINCIPAL> "(" ")"
+    "{" SENTENCIAS() "}"
   }
 
   void CUERPO():{}
@@ -65,25 +73,33 @@
 
   void SENTENCIAS():{}
   {
-    ( LOOKAHEAD(2)
-      ASIGNACION() ";"
-    |
-      LLAMADA() ";"
-    |
-      DEC_LOCAL() ";"
-    |
-      RETORNO() ";"
-    |
-      MOSTRAR() ";"
-    |
-      SI()
-    |
-      SELECCIONA()
-    |
-      MIENTRAS()
-    |
-      PARA()
-    )
+    try{
+      ( LOOKAHEAD(2)
+        ASIGNACION() <PYC>
+      |
+        LLAMADA() <PYC>
+      |
+        DEC_LOCAL() <PYC>
+      |
+        RETORNO() <PYC>
+      |
+        MOSTRAR() <PYC>
+      |
+        SI()
+      |
+        SELECCIONA()
+      |
+        MIENTRAS()
+      |
+        PARA()
+      )
+     } catch (ParseException e) {
+      Token t;
+      do {
+        t = getNextToken();
+      } while (t.kind != PYC);
+      reportarError(e.getMessage());
+    }
   }
 
   void DEC_LOCAL():{}
@@ -129,95 +145,208 @@
 
   void PARA():{}
   {
-    <PR_PARA> "(" <T_NUM> <ID> "=" EXP() ";" EXP() ";" ( <INCREMENTO> | <DECREMENTO> ) ")" CUERPO()
+    <PR_PARA> "(" <T_NUM> <ID> "=" EXP() <PYC> EXP() <PYC> ( <INCREMENTO> | <DECREMENTO> ) ")" CUERPO()
   }
 
-  void EXP():{}
+  //--------------------------------------
+  //     EXPRESIONES
+  //--------------------------------------
+  Nodo EXP():{ Nodo nodo; }
   {
-    LOG_OR()
+    nodo=LOG_OR()
+    { return nodo; }
   }
 
-  void LOG_OR():{}
+  //--------------------------------------
+  //     Expresiones lógicas
+  //--------------------------------------
+  Nodo LOG_OR():{ Nodo nodo, temp, extra; }
   {
-    LOG_AND() ( "||" LOG_AND() )*
-  }
-
-  void LOG_AND():{}
-  {
-    LOG_XOR() ( "&&" LOG_XOR() )*
-  }
-
-  void LOG_XOR():{}
-  {
-    LOG_NOT() ( "¿?" LOG_NOT() )*
-  }
-
-  void LOG_NOT():{}
-  {
-    ( "!" RELACIONAL() )+
-  }
-
-  void RELACIONAL():{}
-  {
-    ARITM() OP_REL() ARITM()
-  }
-
-  void OP_REL():{}
-  {
-    ( "==" | "!=" | ">" | ">=" | "<" | "<=" )
-  }
-
-  void ARITM():{}
-  {
-    TERM() 
+    nodo=LOG_AND() 
       ( 
-        "+" TERM() 
-      |
-        "-" TERM()
+        "||" extra=LOG_AND() 
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_OR, nodo, extra);
+          }
       )*
+    { return nodo; }
   }
 
-  void TERM():{}
+  Nodo LOG_AND():{ Nodo nodo, temp, extra; }
   {
-    FACT()
+    nodo=LOG_XOR() 
+      ( 
+        "&&" extra=LOG_XOR() 
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_AND, nodo, extra);
+          }
+      )*
+    { return nodo; }
+  }
+
+  Nodo LOG_XOR():{ Nodo nodo, temp, extra; }
+  {
+    nodo=LOG_NOT() 
+      ( 
+        "¿?" extra=LOG_NOT() 
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_XOR, nodo, extra);
+          }
+      )*
+    { return nodo; }
+  }
+
+  Nodo LOG_NOT():{ Nodo nodo, extra; }
+  {
+    ( 
+      nodo=RELACIONAL()
+    |
+      "!" extra=LOG_NOT()
+      { nodo = FabricaNodos.creaNot(extra); }
+    )
+    { return nodo; }
+  }
+
+  //--------------------------------------
+  //     Expresiones relacionales
+  //--------------------------------------
+  Nodo RELACIONAL():{ String op; Nodo nodo, temp, extra; }
+  {
+    nodo=ARITM() 
+    [ 
+      op=OP_REL() extra=ARITM() 
+      { 
+        temp = FabricaNodos.copiar(nodo); 
+        nodo = FabricaNodos.creaRelacional(op, temp, extra);
+      }
+    ]
+    { return nodo; }
+  }
+
+  String OP_REL():{ String op; }
+  {
+    ( 
+      "==" { op = Constantes.OP_EQU;}
+    | 
+      "!=" { op = Constantes.OP_NEQ;}
+    | 
+      ">"  { op = Constantes.OP_MAY;}
+    | 
+      ">=" { op = Constantes.OP_MYE;}
+    | 
+      "<"  { op = Constantes.OP_MEN;}
+    | 
+      "<=" { op = Constantes.OP_MNE;}
+    )
+    { return op; }
+  }
+
+  //--------------------------------------
+  //     Expresiones aritméticas
+  //--------------------------------------
+  Nodo ARITM():{ Nodo nodo, temp, extra; }
+  {
+    nodo=TERM()
+      ( 
+        "+" extra=TERM()
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_SUM, temp, extra);
+          }
+      |
+        "-" extra=TERM()
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_RES, temp, extra);
+          }
+      )*
+    { return nodo; }
+  }
+
+  Nodo TERM():{ Nodo nodo, temp, extra; }
+  {
+    nodo=FACT()
       (
-        "*" FACT()
+        "*" extra=FACT()
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_MUL, temp, extra);
+          }
       |
-        "/" FACT()
+        "/" extra=FACT()
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_DIV, temp, extra);
+          }
       |
-        "%" FACT()
+        "%" extra=FACT()
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_MOD, temp, extra);
+          }
       )*
+    { return nodo; }
   }
 
-  void FACT():{}
+  Nodo FACT():{ Nodo nodo, temp, extra; }
   {
-    VAL() 
-      ( "^" VAL() )*
+    nodo=VAL()
+      ( 
+        "^" extra=VAL() 
+          {
+            temp = FabricaNodos.copiar(nodo);
+            nodo = FabricaNodos.creaAritmetica(Constantes.OP_POT, temp, extra);
+          }
+      )*
+    { return nodo; }
   }
 
-  void VAL():{}
+  Nodo VAL():{ Nodo nodo, temp; Token token; }
   {
     (
-      "(" EXP() ")"
+      "(" nodo=EXP() ")"
     |
-      "-" VAL()
+      "-" temp=VAL()
+      { nodo = FabricaNodos.creaMenosUnario(temp); }
     |
-      <ID> [ "(" [ EXP() ( "," EXP() )* ] ")" ]
+      token=<ID> 
+        { nodo = FabricaNodos.creaAccesoID(token.image); } 
+      [ "(" { nodo.setRol(Constantes.LLAMADA); } 
+        [ temp=EXP() { nodo.addHijo(temp); } 
+          ( "," temp=EXP() { nodo.addHijo(temp); } )* ] ")" ]
     |
-      NATIVO()
+      nodo=NATIVO()
     )
+    { return nodo; }
   }
 
-  void NATIVO():{}
+  Nodo NATIVO():{ Nodo nodo; Token token; }
   {
-    <NUMERO> | <CADENA> | <TRUE> | <FALSE>
+    ( 
+      token=<NUMERO> 
+      { nodo = FabricaNodos.creaNumero(token.image); }
+    | 
+      token=<CADENA> 
+      { nodo = FabricaNodos.creaCadena(token.image); }
+    | 
+      <TRUE> 
+      { nodo = FabricaNodos.creaTrue(); }
+    | 
+      <FALSE>
+      { nodo = FabricaNodos.creaFalse(); }
+    )
+    { return nodo; }
   }
     
   //--------------------------------------
-  //         Expresiones léxicas
+  //     Definición de reglas léxicas
   //--------------------------------------
   TOKEN:{
-      < T_NUM : "Num" >
+      < PYC : ";" >
+    | < T_NUM : "Num" >
     | < T_STR : "Str" >
     | < T_BOOL : "Bool" >
     | < T_VOID : "Void" >
@@ -278,5 +407,3 @@
   {
     < ~[] >
   }
-
-

@@ -47,6 +47,7 @@ public class Inicio extends javax.swing.JFrame {
         jTextArea1.setEditable(false);
         jTextArea1.setColumns(20);
         jTextArea1.setRows(5);
+        jTextArea1.setBorder(null);
         jScrollPane1.setViewportView(jTextArea1);
 
         jTabbedPane1.addTab("   Salida   ", jScrollPane1);

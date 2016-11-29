@@ -11,6 +11,8 @@ public interface ParserLenguajeConstants {
   /** End of File. */
   int EOF = 0;
   /** RegularExpression Id. */
+  int PYC = 24;
+  /** RegularExpression Id. */
   int T_NUM = 25;
   /** RegularExpression Id. */
   int T_STR = 26;
@@ -69,7 +71,6 @@ public interface ParserLenguajeConstants {
     "<EOF>",
     "\",\"",
     "\"=\"",
-    "\";\"",
     "\"(\"",
     "\")\"",
     "\"{\"",
@@ -91,6 +92,7 @@ public interface ParserLenguajeConstants {
     "\"/\"",
     "\"%\"",
     "\"^\"",
+    "\";\"",
     "\"Num\"",
     "\"Str\"",
     "\"Bool\"",
