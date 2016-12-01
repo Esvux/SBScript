@@ -149,7 +149,7 @@
   }
 
   //--------------------------------------
-  //     EXPRESIONES
+  //             EXPRESIONES
   //--------------------------------------
   Nodo EXP():{ Nodo nodo; }
   {
@@ -158,7 +158,7 @@
   }
 
   //--------------------------------------
-  //     Expresiones lógicas
+  //         Expresiones lógicas
   //--------------------------------------
   Nodo LOG_OR():{ Nodo nodo, temp, extra; }
   {
@@ -167,7 +167,7 @@
         "||" extra=LOG_AND() 
           {
             temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_OR, nodo, extra);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_OR, temp, extra);
           }
       )*
     { return nodo; }
@@ -180,7 +180,7 @@
         "&&" extra=LOG_XOR() 
           {
             temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_AND, nodo, extra);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_AND, temp, extra);
           }
       )*
     { return nodo; }
@@ -193,7 +193,7 @@
         "¿?" extra=LOG_NOT() 
           {
             temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_XOR, nodo, extra);
+            nodo = FabricaNodos.creaLogica(Constantes.OP_XOR, temp, extra);
           }
       )*
     { return nodo; }
@@ -211,7 +211,7 @@
   }
 
   //--------------------------------------
-  //     Expresiones relacionales
+  //       Expresiones relacionales
   //--------------------------------------
   Nodo RELACIONAL():{ String op; Nodo nodo, temp, extra; }
   {
@@ -245,7 +245,7 @@
   }
 
   //--------------------------------------
-  //     Expresiones aritméticas
+  //       Expresiones aritméticas
   //--------------------------------------
   Nodo ARITM():{ Nodo nodo, temp, extra; }
   {
@@ -304,6 +304,18 @@
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+     VAL -> "(" EXP ")"
+          | "-" VAL
+          | id [ "(" [ EXP ("," EXP)* ] ")" ]
+          | NATIVO
+  _____________________________________________________________
+  Esta producción puede reconocer la agrupación de expresiones por
+  medio de paréntesis; o un menos unario aplicado a un valor; o un 
+  acceso a una variable; o una llamada a un método (con 0 o más 
+  valores en sus parámetros); o un dato.
+  -----------------------------------------------------------*/
   Nodo VAL():{ Nodo nodo, temp; Token token; }
   {
     (
@@ -323,6 +335,16 @@
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+  NATIVO -> numero
+          | cadena
+          | true
+          | false
+  _____________________________________________________________
+  Esta producción reconoce los datos básicos del lenguaje, un 
+  número, una cadena o un booleano en sus dos posibles valores.
+  -----------------------------------------------------------*/
   Nodo NATIVO():{ Nodo nodo; Token token; }
   {
     ( 
