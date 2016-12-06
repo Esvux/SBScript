@@ -13,14 +13,14 @@ public class Nodo {
     private int rol;
     private int tipo;    
     private List<Nodo> hijos;
-    private List<String> cadenas;
+    private List<String> listaAux;
 
     public Nodo() {
         this.cadena = "";
         this.rol = Constantes.NULO;
         this.tipo = Constantes.T_ERROR;
         this.hijos = new ArrayList<>();
-        this.cadenas = new ArrayList<>();
+        this.listaAux = null;
     }
 
     public Nodo(int rol, String cadena) {
@@ -28,7 +28,7 @@ public class Nodo {
         this.rol = rol;
         this.tipo = Constantes.T_ERROR;
         this.hijos = new ArrayList<>();
-        this.cadenas = new ArrayList<>();
+        this.listaAux = null;
     }
 
     public Nodo(int rol, int tipo, String cadena) {
@@ -36,9 +36,8 @@ public class Nodo {
         this.rol = rol;
         this.tipo = tipo;
         this.hijos = new ArrayList<>();
-        this.cadenas = new ArrayList<>();
+        this.listaAux = null;
     }
-    
     
     public String getCadena() {
         return cadena;
@@ -72,12 +71,20 @@ public class Nodo {
         this.hijos = hijos;
     }
 
-    public List<String> getCadenas() {
-        return cadenas;
+    public List<String> getListaAux() {
+        return listaAux;
     }
 
-    public void setCadenas(List<String> cadenas) {
-        this.cadenas = cadenas;
+    public void setListaAux(List<String> listaAux) {
+        this.listaAux = listaAux;
+    }
+
+    public void initListaAux() {
+        this.listaAux = new ArrayList<>();
+    }
+    
+    public void addAux(String nuevo) {
+        this.listaAux.add(nuevo);
     }
     
     public void addHijo(Nodo nodo){

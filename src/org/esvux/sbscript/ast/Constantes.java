@@ -6,6 +6,13 @@ package org.esvux.sbscript.ast;
  */
 public class Constantes {
 
+    public static final int ERR_LEXICO = 0;
+    public static final int ERR_SINTACTICO = 1;
+    public static final int ERR_SEMANTICO = 2;
+    public static final int ERR_GENERAL = 3;
+    public static final String ERRORES[] = { "Léxico", "Sintáctico", "Semántico", "General" };
+    
+
     public static final int T_NUM = 0;
     public static final int T_STR = 1;
     public static final int T_BOOL = 2;
@@ -23,6 +30,18 @@ public class Constantes {
     public static final int ARITMETICA = 7;
     public static final int RELACIONAL = 8;
     public static final int LOGICA = 9;
+    
+    public static final int CUERPO = 10;
+    public static final int DECLARACION = 11;
+    public static final int ASIGNACION = 12;
+    public static final int RETORNO = 13;
+    public static final int MOSTRAR = 14;
+    public static final int SI = 15;
+    public static final int SELECCIONA = 16;
+    public static final int CASO = 17;
+    public static final int MIENTRAS = 18;
+    public static final int PARA = 19;
+    public static final int PARAMETRO = 20;
     
     public static final String OP_POT = "^";
     public static final String OP_MOD = "%";
@@ -42,5 +61,10 @@ public class Constantes {
     public static final String OP_OR = "||";
     public static final String OP_XOR = "¿?";
     public static final String OP_NOT = "!";
+    
+    public static final String VAL_TRUE = "true";
+    public static final String VAL_FALSE = "false";
+    
+    
         
 }

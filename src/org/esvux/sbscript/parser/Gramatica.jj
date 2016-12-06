@@ -3,21 +3,35 @@
     STATIC = false;
   }
 
-  PARSER_BEGIN(ParserLenguaje)
+  /*-----------------------------------------------------------
+    DEFINICIÓN DE ELEMENTOS PARA UTILIZAR EN LA CLASE PARSER
+  _____________________________________________________________
+  En esta sección, delimitada por PARSER_BEGIN y PARSER_END, se
+  definen los métodos auxiliares o variables globales que se 
+  deseen utilizar dentro de las acciones semánticas.
+  ParserSBScript - es el nombre de la clase que parsea la entrada.
+  -----------------------------------------------------------*/
+  PARSER_BEGIN(ParserSBScript)
   package org.esvux.sbscript.parser;
 
+  import org.esvux.sbscript.errores.Errores;
   import org.esvux.sbscript.ast.Nodo;
-  import org.esvux.sbscript.ast.FabricaNodos;
+  import org.esvux.sbscript.ast.Metodo;
+  import org.esvux.sbscript.ast.Programa;
+  import org.esvux.sbscript.ast.FabricaAST;
   import org.esvux.sbscript.ast.Constantes;
 
-  public class ParserLenguaje {
+  public class ParserSBScript {
 
-    private void reportarError(String errorString){
-      System.err.println(errorString);
+    private Errores err = Errores.getInstance();
+
+    private void reportarError(int fila, int columna, String descError){
+      err.nuevoErrorSintactico(fila, columna, descError);
+      System.err.println(descError);
     }
 
     public static void main(String args[]) throws ParseException {
-      ParserLenguaje parser = new ParserLenguaje(
+      ParserSBScript parser = new ParserSBScript(
         new java.io.StringReader("Num a,b,c;")
       );
       parser.PROGRAMA();
@@ -25,207 +39,619 @@
     }
 
   }
-  PARSER_END(ParserLenguaje)
+  PARSER_END(ParserSBScript)
 
-  void PROGRAMA():{}
+
+  /*-----------------------------------------------------------
+    PROGRAMA -> ( PRINCIPAL | METODO | DEC_GLOBAL )+
+  _____________________________________________________________
+  Producción de inicio que se encarga de listar el método principal
+  las variables globales y los métodos. En esta producción se usó
+  un LOOKAHEAD, que determina el número de caracteres de anticipo
+  para realizar el análisis sintáctico (2 para diferenciar entre
+  una definición de método y una declaración de variables). Toda
+  esta información se almacena en un objeto programa.
+  -----------------------------------------------------------*/
+  Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
   {
     (
+      met=PRINCIPAL()
+      { pro.setPrincipal(met); }
+    |
       LOOKAHEAD(2)
-      DEC_GLOBAL()
+      met=METODO()
+      { pro.addMetodo(met); }
     |
-      METODO()
-    |
-      PRINCIPAL()
+      dec=DEC_GLOBAL()
+      { pro.addVariables(dec); }
     )+
+    { return pro; }
   }
 
-  void DEC_GLOBAL():{}
-  {
-    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ] <PYC>
-  }
 
-  void TIPO_VAR():{}
-  {
-    <T_NUM> | <T_STR> | <T_BOOL>    
-  }
-
-  void METODO():{}
-  {
-    TIPO_MET() <ID> "(" [ TIPO_VAR() <ID> ( "," TIPO_VAR() <ID> )* ] ")"
-    "{" SENTENCIAS() "}"
-  }
-
-  void TIPO_MET():{}
-  {
-    <T_NUM> | <T_STR> | <T_BOOL> | <T_VOID>
-  }
-
-  void PRINCIPAL():{}
+  /*-----------------------------------------------------------
+    PRINCIPAL -> "Principal" "(" ")" CUERPO
+  _____________________________________________________________
+  Esta producción reconoce un método principal y crea un objeto
+  método (al que se le agrega el nodo cuerpo).
+  -----------------------------------------------------------*/
+  Metodo PRINCIPAL():{ Nodo cuerpo; }
   {
     <PR_PRINCIPAL> "(" ")"
-    "{" SENTENCIAS() "}"
+    cuerpo=CUERPO()
+    { 
+      Metodo principal = FabricaAST.creaPrincipal();
+      principal.setCuerpo(cuerpo); 
+      return principal;
+    }
   }
 
-  void CUERPO():{}
+
+  /*-----------------------------------------------------------
+    TIPO_MET -> "Void"
+             |  "Num"
+             |  "Str"
+             |  "Bool"
+  _____________________________________________________________
+  Esta producción determina los tipos de dato permitidos para la
+  declaración de métodos y retorna un entero que representa el
+  tipo de dato reconocido.
+  -----------------------------------------------------------*/
+  int TIPO_MET():{ int tipo; }
   {
-    "{" SENTENCIAS() "}" 
+    ( <T_NUM> 
+      { tipo = Constantes.T_NUM; }
+    | <T_STR> 
+      { tipo = Constantes.T_STR; }
+    | <T_BOOL>
+      { tipo = Constantes.T_BOOL; } 
+    | <T_VOID>
+      { tipo = Constantes.T_VOID; } 
+    )
+    { return tipo; }
   }
 
-  void SENTENCIAS():{}
+
+  /*-----------------------------------------------------------
+    METODO -> TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO
+  _____________________________________________________________
+  Esta producción reconoce un método y crea un objeto método con un
+  tipo y un nombre específico, además de agregar al objeto creado,
+  los parámetros que acompañan la definición del método, finalmente
+  se le agrega el nodo cuerpo.
+  -----------------------------------------------------------*/
+  Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
+  {
+    tipo=TIPO_MET() id=<ID> 
+    { metodo = FabricaAST.creaMetodo(id.image, tipo); }
+    "(" [ tipo=TIPO_VAR() id=<ID> 
+    { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); }
+    ( "," tipo=TIPO_VAR() id=<ID> 
+      { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); } 
+    )* ] ")"
+    cuerpo=CUERPO() 
+    { 
+      metodo.setCuerpo(cuerpo); 
+      return metodo;
+    }
+  }
+
+
+  /*-----------------------------------------------------------
+    TIPO_VAR -> "Num"
+             |  "Str"
+             |  "Bool"
+  _____________________________________________________________
+  Esta producción determina los tipos de datos permitidos para la
+  declaración de variables y retorna un entero que representa el
+  tipo de dato reconocido.
+  -----------------------------------------------------------*/
+  int TIPO_VAR():{ int tipo; }
+  {
+    ( <T_NUM> 
+      { tipo = Constantes.T_NUM; }
+    | <T_STR> 
+      { tipo = Constantes.T_STR; }
+    | <T_BOOL>
+      { tipo = Constantes.T_BOOL; } 
+    )
+    { return tipo; }
+  }
+
+
+  /*-----------------------------------------------------------
+    DEC_GLOBAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de tipo
+  DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
+  una lista adicional de strings para almacenar los id's y existe
+  un nodo opcional para la expresión de la posible asignación).
+               _____________
+              | DEC_GLOBAL  |
+              |_____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo DEC_GLOBAL():{ Nodo nodo, exp; int tipo; Token id; }
+  {
+    tipo=TIPO_VAR() id=<ID> 
+    { nodo = FabricaAST.creaDeclaracion(tipo, id.image); } 
+    ( "," id=<ID> 
+      { nodo.addAux(id.image); } )* 
+    [ "=" exp=EXP() 
+      { nodo.addHijo(exp); } ] <PYC>
+    { return nodo; }
+  }
+
+
+  /*-----------------------------------------------------------
+    CUERPO -> "{" ( SENTENCIA )* "}"
+  _____________________________________________________________
+  Esta producción agrupa las sentencias, delimitadas por un juego
+  de llaves, en un nodo de tipo CUERPO.
+               ____________
+              | CUERPO     |
+              |____________|
+                 |     ______________
+                (0)---| SENTENCIA 1  |
+                 |    |______________|
+                (1)---| SENTENCIA 2  |
+                 |    |______________|
+                 |         . . .
+                 |     ______________
+                (n)---| SENTENCIA n  |
+                      |______________|
+  -----------------------------------------------------------*/
+  Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo sentencia; }
+  {
+    "{" ( sentencia=SENTENCIA() { nodo.addHijo(sentencia); } )* "}" 
+    { return nodo; }
+  }
+
+
+  /*-----------------------------------------------------------
+    SENTENCIA -> ASIGNACION
+              |  LLAMADA
+              |  DEC_LOCAL
+              |  RETORNO
+              |  MOSTRAR
+              |  SI
+              |  SELECCIONA
+              |  MIENTRAS
+              |  PARA
+  _____________________________________________________________
+  Esta producción es una producción de transición que concentra 
+  todas las instrucciones posibles e incorpora la recuperación de
+  errores sintácticos, en lo que concierne al AST retorna el nodo
+  asociado a cada instrucción o un nodo en blanco si se presenta
+  algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
+  ID cuando lo que espera es una llamada o una asignación.
+  -----------------------------------------------------------*/
+  Nodo SENTENCIA():{ Nodo nodo = new Nodo(); }
   {
     try{
       ( LOOKAHEAD(2)
-        ASIGNACION() <PYC>
+        nodo=ASIGNACION()
       |
-        LLAMADA() <PYC>
+        nodo=LLAMADA()
       |
-        DEC_LOCAL() <PYC>
+        nodo=DEC_LOCAL()
       |
-        RETORNO() <PYC>
+        nodo=RETORNO()
       |
-        MOSTRAR() <PYC>
+        nodo=MOSTRAR()
       |
-        SI()
+        nodo=SI()
       |
-        SELECCIONA()
+        nodo=SELECCIONA()
       |
-        MIENTRAS()
+        nodo=MIENTRAS()
       |
-        PARA()
+        nodo=PARA()
       )
      } catch (ParseException e) {
       Token t;
       do {
         t = getNextToken();
       } while (t.kind != PYC);
-      reportarError(e.getMessage());
+      reportarError(t.beginLine, t.beginColumn, e.getMessage());
     }
+    { return nodo; }
   }
 
-  void DEC_LOCAL():{}
+
+  /*-----------------------------------------------------------
+    DEC_LOCAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de tipo
+  DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
+  una lista adicional de strings para almacenar los id's y existe
+  un nodo opcional para la expresión de la posible asignación).
+               ____________
+              | DEC_LOCAL  |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo DEC_LOCAL():{ Nodo nodo, exp; int tipo; Token id; }
   {
-    TIPO_VAR() <ID> ("," <ID>)* [ "=" EXP() ]
+    tipo=TIPO_VAR() id=<ID> 
+    { nodo = FabricaAST.creaDeclaracion(tipo, id.image); }
+    ( "," id=<ID> { nodo.addAux(id.image); } )* 
+    [ "=" exp=EXP() { nodo.addHijo(exp); } ] <PYC>
+    { return nodo; }
   }
 
-  void ASIGNACION():{}
+
+  /*-----------------------------------------------------------
+    ASIGNACION -> id "=" EXP ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de tipo
+  ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
+  principal, el atributo cadena guardará el valor del ID asociado 
+  a la asignación).
+               ____________
+              | ASIGNACION |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo ASIGNACION():{ Nodo exp; Token id; }
   {
-    <ID> "=" EXP()
+    id=<ID> "=" exp=EXP() <PYC>
+    { return FabricaAST.creaAsignacion(id.image, exp); }
   }
 
-  void LLAMADA():{}
+
+  /*-----------------------------------------------------------
+    LLAMADA -> id "(" [ EXP ("," EXP)* ] ")" ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de tipo
+  LLAMADA y crea la siguiente estructura para el AST (en el nodo 
+  principal, el atributo cadena guardará el valor del ID asociado 
+  a la llamada, mientras los nodos hijo serán los valores para los
+  parámetros).
+               ____________
+              | LLAMADA    |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                 |    |_____________|
+                (1)---| EXPRESION   |
+                 |    |_____________|
+                 |         . . .
+                 |     _____________
+                (n)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo LLAMADA():{ Nodo nodo, exp; Token id; }
   {
-    <ID> "(" [ EXP() ( "," EXP() )* ] ")"
+    id=<ID> "(" { nodo = FabricaAST.creaLlamada(id.image); }
+    [ exp=EXP() { nodo.addHijo(exp); }
+    ( "," exp=EXP() { nodo.addHijo(exp); } )* ] ")" <PYC>
+    { return nodo; }
   }
 
-  void RETORNO():{}
+
+  /*-----------------------------------------------------------
+    RETORNO -> "Retorno" EXP ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de 
+  tipo RETORNO y crea la siguiente estructura para el AST.
+               ____________
+              | RETORNO    |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo RETORNO():{ Nodo exp; }
   {
-    <PR_RETORNO> EXP()
+    <PR_RETORNO> exp=EXP() <PYC>
+    { return FabricaAST.creaRetorno(exp); }
   }
 
-  void MOSTRAR():{}
+
+  /*-----------------------------------------------------------
+    MOSTRAR -> "Mostrar" "(" EXP ("," EXP)* ")" ";"
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de 
+  tipo MOSTRAR y crea la siguiente estructura para el AST.
+               ____________
+              | MOSTRAR    |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                 |    |_____________|
+                (1)---| EXPRESION   |
+                 |    |_____________|
+                 |         . . .
+                 |     _____________
+                (n)---| EXPRESION   |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo MOSTRAR():{ Nodo nodo, exp; }
   {
-    <PR_MOSTRAR> "(" EXP() ( "," EXP() )* ")"
+    <PR_MOSTRAR> "(" exp=EXP() { nodo = FabricaAST.creaMostrar(exp); }
+    ( "," exp=EXP() { nodo.addHijo(exp); } )* ")" <PYC>
+    { return nodo; }
   }
 
-  void SI():{}
+
+  /*-----------------------------------------------------------
+    SI -> "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de 
+  tipo SI y crea la siguiente estructura para el AST (el SINO es
+  opcional, por lo tanto su presencia en el AST también lo es).
+               __________
+              | SI       |
+              |__________|
+                 |     _______________
+                (0)---| CONDICION     |
+                 |    |_______________|
+                (1)---| CUERPO (SI)   |
+                 |    |_______________|
+                (2)---| CUERPO (SINO) |
+                      |_______________|
+  -----------------------------------------------------------*/
+  Nodo SI():{ Nodo cond, si; Nodo sino = null; }
   {
-    <PR_SI> "(" EXP() ")" CUERPO() [ <PR_SINO> CUERPO() ]
+    <PR_SI> "(" cond=EXP() ")" 
+    si=CUERPO() 
+    [ <PR_SINO> sino=CUERPO() ]
+    { return FabricaAST.creaSi(cond, si, sino); }
   }
 
-  void SELECCIONA():{}
+
+  /*-----------------------------------------------------------
+    SELECCIONA -> "Selecciona" "(" EXP ")" ( CASO )+
+  _____________________________________________________________
+  Esta producción detecta la existencia de una instrucción de 
+  tipo SELECCIONA y crea la siguiente estructura para el AST 
+  (con un mínimo de un caso establecido).
+               ____________
+              | SELECCIONA |
+              |____________|
+                 |     _____________
+                (0)---| EXPRESION   |
+                 |    |_____________|
+                (1)---| CASO 1      |
+                 |    |_____________|
+                (2)---| CASO 2      |
+                 |    |_____________|
+                 |         . . .
+                 |     _____________
+                (n)---| CASO n      |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo SELECCIONA():{ Nodo nodo, exp, caso; }
   {
-    <PR_SELECCIONA> "(" EXP() ")" 
-      ( NATIVO() ":" CUERPO() )+
+    <PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(exp); }
+    ( caso=CASO() { nodo.addHijo(caso); } )+
+    { return nodo; }
   }
 
-  void MIENTRAS():{}
+
+  /*-----------------------------------------------------------
+    CASO -> NATIVO ":" CUERPO
+  _____________________________________________________________
+  Esta producción detecta la existencia de un caso, cada caso está
+  compuesto por un valor nativo y un cuerpo de instrucciones.
+               __________
+              | CASO     |
+              |__________|
+                 |     _____________
+                (0)---| NATIVO      |
+                 |    |_____________|
+                (1)---| CUERPO      |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo CASO():{ Nodo valor, cuerpo; }
   {
-    <PR_MIENTRAS> "(" EXP() ")" CUERPO()
+    valor=NATIVO() ":" cuerpo=CUERPO()
+    { return FabricaAST.creaCaso(valor, cuerpo); }
   }
 
-  void PARA():{}
+
+  /*-----------------------------------------------------------
+    MIENTRAS -> "Mientras" "(" EXP ")" CUERPO
+  _____________________________________________________________
+  Esta producción detecta la existencia de un ciclo MIENTRAS, y 
+  crea la siguiente estructura para el AST.
+               __________
+              | MIENTRAS |
+              |__________|
+                 |     _____________
+                (0)---| CONDICION   |
+                 |    |_____________|
+                (1)---| CUERPO      |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo MIENTRAS():{ Nodo exp, cuerpo; }
   {
-    <PR_PARA> "(" <T_NUM> <ID> "=" EXP() <PYC> EXP() <PYC> ( <INCREMENTO> | <DECREMENTO> ) ")" CUERPO()
+    <PR_MIENTRAS> "(" exp=EXP() ")" 
+    cuerpo=CUERPO()
+    { return FabricaAST.creaMientras(exp, cuerpo); }
   }
 
-  //--------------------------------------
-  //             EXPRESIONES
-  //--------------------------------------
+
+  /*-----------------------------------------------------------
+    PARA -> "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO
+  _____________________________________________________________
+  Esta producción detecta la existencia de un ciclo PARA, y crea
+  la siguiente estructura para el AST (el atributo cadena lleva
+  el valor 'para++' o 'para--' según lo dicta la entrada).
+               __________
+              | PARA     |
+              |__________|
+                 |     _____________
+                (0)---| DECLARACION |
+                 |    |_____________|
+                (1)---| CONDICION   |
+                 |    |_____________|
+                (2)---| CUERPO      |
+                      |_____________|
+  -----------------------------------------------------------*/
+  Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token token; Token id; int tipo; }
+  {
+    <PR_PARA> "(" 
+    tipo=TIPO_VAR() id=<ID> 
+    { dec = FabricaAST.creaDeclaracion(tipo, id.image); }
+    "=" exp=EXP() <PYC> { dec.addHijo(exp); }
+    cond=EXP() <PYC> 
+    ( token=<INCREMENTO> | token=<DECREMENTO> ) ")" 
+    cuerpo=CUERPO()
+    { return FabricaAST.creaPara(dec, cond, cuerpo, token.image); }
+  }
+
+
+  /*-----------------------------------------------------------
+    EXP -> LOG_OR
+  _____________________________________________________________
+  Esta producción inicia el trayecto para definir una expresión
+  dentro de SBScript, expresión que puede ser de tipo lógica,
+  relacional, aritmética o un valor puntual. A continuación se
+  detalla la precedencia que se le asigna a cada operador.
+   __________________________________________________________
+  | Operación                | Operador       | Precedencia  |
+  |__________________________________________________________|
+  | OR lógico                |  "||"          |   0 (menor)  |
+  | AND lógico               |  "&&"          |   1          |
+  | XOR lógico               |  "¿?"          |   2          |
+  | NOT lógico               |  "!"           |   3          |
+  | Comparación relacional   |  Ver OP_REL()  |   4          |
+  | Suma o concatenación     |  "+"           |   5          |
+  | Resta                    |  "-"           |   5          |
+  | Multiplicación           |  "*"           |   6          |
+  | División                 |  "/"           |   6          |
+  | Módulo                   |  "%"           |   6          |
+  | Potenciación             |  "^"           |   7          |
+  | Menos (unario)           |  "-"           |   8          |
+  | Símbolos de agrupación   |  Paréntesis    |   9 (mayor)  |
+  |__________________________|________________|______________|
+
+  -----------------------------------------------------------*/
   Nodo EXP():{ Nodo nodo; }
   {
     nodo=LOG_OR()
     { return nodo; }
   }
 
-  //--------------------------------------
-  //         Expresiones lógicas
-  //--------------------------------------
+
+  /*-----------------------------------------------------------
+    LOG_OR -> LOG_AND ("||" LOG_AND)*
+  _____________________________________________________________
+  Esta producción admite una única expresión lógica o una
+  secuencia de operadores OR aplicados entre dos expresiones 
+  lógicas.
+  -----------------------------------------------------------*/
   Nodo LOG_OR():{ Nodo nodo, temp, extra; }
   {
     nodo=LOG_AND() 
       ( 
         "||" extra=LOG_AND() 
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_OR, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaLogica(Constantes.OP_OR, temp, extra);
           }
       )*
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    LOG_AND -> LOG_XOR ("&&" LOG_XOR)*
+  _____________________________________________________________
+  Esta producción admite una única expresión lógica o una
+  secuencia de operadores AND aplicados entre dos expresiones 
+  lógicas.
+  -----------------------------------------------------------*/
   Nodo LOG_AND():{ Nodo nodo, temp, extra; }
   {
     nodo=LOG_XOR() 
       ( 
         "&&" extra=LOG_XOR() 
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_AND, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaLogica(Constantes.OP_AND, temp, extra);
           }
       )*
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    LOG_XOR -> LOG_NOT ("¿?" LOG_NOT)*
+  _____________________________________________________________
+  Esta producción admite una única expresión lógica o una
+  secuencia de operadores XOR aplicados entre dos expresiones 
+  lógicas.
+  -----------------------------------------------------------*/
   Nodo LOG_XOR():{ Nodo nodo, temp, extra; }
   {
     nodo=LOG_NOT() 
       ( 
         "¿?" extra=LOG_NOT() 
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaLogica(Constantes.OP_XOR, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaLogica(Constantes.OP_XOR, temp, extra);
           }
       )*
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    LOG_NOT -> RELACIONAL
+            |  "!" LOG_NOT
+  _____________________________________________________________
+  Esta producción admite una única expresión o una negación 
+  lógica del valor obtenido por una expresión.
+  -----------------------------------------------------------*/
   Nodo LOG_NOT():{ Nodo nodo, extra; }
   {
     ( 
       nodo=RELACIONAL()
     |
       "!" extra=LOG_NOT()
-      { nodo = FabricaNodos.creaNot(extra); }
+      { nodo = FabricaAST.creaNot(extra); }
     )
     { return nodo; }
   }
 
-  //--------------------------------------
-  //       Expresiones relacionales
-  //--------------------------------------
+
+  /*-----------------------------------------------------------
+    RELACIONAL -> ARITM (OP_REL ARITM)
+  _____________________________________________________________
+  Esta producción admite una única expresión aritmétcia, o una
+  operación de índole relacional (comparativa) entre dos, y solo
+  dos, expresiones aritméticas. El operador viene dado por la 
+  producción OP_REL.
+  -----------------------------------------------------------*/
   Nodo RELACIONAL():{ String op; Nodo nodo, temp, extra; }
   {
     nodo=ARITM() 
     [ 
       op=OP_REL() extra=ARITM() 
       { 
-        temp = FabricaNodos.copiar(nodo); 
-        nodo = FabricaNodos.creaRelacional(op, temp, extra);
+        temp = FabricaAST.copiar(nodo); 
+        nodo = FabricaAST.creaRelacional(op, temp, extra);
       }
     ]
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    OP_REL -> ("==" | "!=" | ">" | ">=" | "<" | "<=")
+  _____________________________________________________________
+  Producción que determina el operando a aplicar en una expresión
+  de tipo relacional.
+  -----------------------------------------------------------*/
   String OP_REL():{ String op; }
   {
     ( 
@@ -244,61 +670,81 @@
     { return op; }
   }
 
-  //--------------------------------------
-  //       Expresiones aritméticas
-  //--------------------------------------
+
+  /*-----------------------------------------------------------
+    ARTIM -> TERM ("+" TERM | "-" TERM)*
+  _____________________________________________________________
+  Esta producción admite un único término, o una seguidilla de 
+  términos aplicando cualesquiera de los operandos (+, -) entre
+  ellos.
+  -----------------------------------------------------------*/
   Nodo ARITM():{ Nodo nodo, temp, extra; }
   {
     nodo=TERM()
       ( 
         "+" extra=TERM()
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_SUM, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_SUM, temp, extra);
           }
       |
         "-" extra=TERM()
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_RES, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_RES, temp, extra);
           }
       )*
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    TERM -> FACT ("*" FACT | "/" FACT | "%" FACT)*
+  _____________________________________________________________
+  Esta producción admite un único factor, o una seguidilla de 
+  factores aplicando cualesquiera de los operandos (*, /, %) 
+  entre ellos.
+  -----------------------------------------------------------*/
   Nodo TERM():{ Nodo nodo, temp, extra; }
   {
     nodo=FACT()
       (
         "*" extra=FACT()
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_MUL, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_MUL, temp, extra);
           }
       |
         "/" extra=FACT()
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_DIV, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_DIV, temp, extra);
           }
       |
         "%" extra=FACT()
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_MOD, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_MOD, temp, extra);
           }
       )*
     { return nodo; }
   }
 
+
+  /*-----------------------------------------------------------
+    FACT -> VAL ("^" VAL)*
+  _____________________________________________________________
+  Esta producción admite un único valor, o una seguidilla de 
+  valores aplicando el operando ^ entre ellos.
+  -----------------------------------------------------------*/
   Nodo FACT():{ Nodo nodo, temp, extra; }
   {
     nodo=VAL()
       ( 
         "^" extra=VAL() 
           {
-            temp = FabricaNodos.copiar(nodo);
-            nodo = FabricaNodos.creaAritmetica(Constantes.OP_POT, temp, extra);
+            temp = FabricaAST.copiar(nodo);
+            nodo = FabricaAST.creaAritmetica(Constantes.OP_POT, temp, extra);
           }
       )*
     { return nodo; }
@@ -314,7 +760,7 @@
   Esta producción puede reconocer la agrupación de expresiones por
   medio de paréntesis; o un menos unario aplicado a un valor; o un 
   acceso a una variable; o una llamada a un método (con 0 o más 
-  valores en sus parámetros); o un dato.
+  valores en sus parámetros); o un dato nativo.
   -----------------------------------------------------------*/
   Nodo VAL():{ Nodo nodo, temp; Token token; }
   {
@@ -322,10 +768,10 @@
       "(" nodo=EXP() ")"
     |
       "-" temp=VAL()
-      { nodo = FabricaNodos.creaMenosUnario(temp); }
+      { nodo = FabricaAST.creaMenosUnario(temp); }
     |
       token=<ID> 
-        { nodo = FabricaNodos.creaAccesoID(token.image); } 
+        { nodo = FabricaAST.creaAccesoID(token.image); } 
       [ "(" { nodo.setRol(Constantes.LLAMADA); } 
         [ temp=EXP() { nodo.addHijo(temp); } 
           ( "," temp=EXP() { nodo.addHijo(temp); } )* ] ")" ]
@@ -349,20 +795,21 @@
   {
     ( 
       token=<NUMERO> 
-      { nodo = FabricaNodos.creaNumero(token.image); }
+      { nodo = FabricaAST.creaNumero(token.image); }
     | 
       token=<CADENA> 
-      { nodo = FabricaNodos.creaCadena(token.image); }
+      { nodo = FabricaAST.creaCadena(token.image); }
     | 
       <TRUE> 
-      { nodo = FabricaNodos.creaTrue(); }
+      { nodo = FabricaAST.creaTrue(); }
     | 
       <FALSE>
-      { nodo = FabricaNodos.creaFalse(); }
+      { nodo = FabricaAST.creaFalse(); }
     )
     { return nodo; }
   }
     
+
   //--------------------------------------
   //     Definición de reglas léxicas
   //--------------------------------------
@@ -389,10 +836,12 @@
     | < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>
   }
 
+
   //--------------------------------------
   //           Tokens ignorados
   //--------------------------------------
   SKIP: { " " | "\n" | "\t" | "\r" }
+
 
   //--------------------------------------
   //       Definición de comentarios

@@ -1,7 +1,9 @@
 package org.esvux.sbscript.ventanas;
 
-import javax.swing.text.Document;
-import javax.swing.text.PlainDocument;
+import java.awt.event.KeyEvent;
+import javax.swing.table.DefaultTableModel;
+import org.esvux.sbscript.errores.Errores;
+import org.esvux.sbscript.interprete.Interprete;
 
 /**
  *
@@ -11,11 +13,26 @@ public class Inicio extends javax.swing.JFrame {
 
     public Inicio() {
         initComponents();
-        Document doc = jTextPane_Programa.getDocument();
-        doc.putProperty(PlainDocument.tabSizeAttribute, 4);
-        jTextPane_Programa.setDocument(doc);
         TextLineNumber tln = new TextLineNumber(jTextPane_Programa);
         jScrollPane_Programa.setRowHeaderView(tln);
+    }
+
+    public static void main(String args[]) {
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("GTK+".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
+            System.err.println("LookAndFeel no encontrado.");
+        }
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new Inicio().setVisible(true);
+            }
+        });
     }
 
     @SuppressWarnings("unchecked")
@@ -38,6 +55,11 @@ public class Inicio extends javax.swing.JFrame {
         jTextPane_Programa.setFont(new java.awt.Font("Andale Mono", 0, 14)); // NOI18N
         jTextPane_Programa.setText("Principal(){\n\tMostrar(\"Hola\", \"Mundo\");\n}");
         jTextPane_Programa.setCaretPosition(0);
+        jTextPane_Programa.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jTextPane_ProgramaKeyReleased(evt);
+            }
+        });
         jScrollPane_Programa.setViewportView(jTextPane_Programa);
 
         jSplitPane_Principal.setLeftComponent(jScrollPane_Programa);
@@ -105,23 +127,14 @@ public class Inicio extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    public static void main(String args[]) {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("GTK+".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | javax.swing.UnsupportedLookAndFeelException ex) {
-            java.util.logging.Logger.getLogger(Inicio.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+    private void jTextPane_ProgramaKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextPane_ProgramaKeyReleased
+        if (evt.getKeyCode() == KeyEvent.VK_F5) {
+            Interprete i = new Interprete(this.jTextPane_Programa.getText());
+            i.analizar();
+            mostrarErrores();
         }
-        java.awt.EventQueue.invokeLater(new Runnable() {
-            public void run() {
-                new Inicio().setVisible(true);
-            }
-        });
-    }
+    }//GEN-LAST:event_jTextPane_ProgramaKeyReleased
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JScrollPane jScrollPane1;
@@ -133,4 +146,15 @@ public class Inicio extends javax.swing.JFrame {
     private javax.swing.JTextArea jTextArea1;
     private javax.swing.JTextPane jTextPane_Programa;
     // End of variables declaration//GEN-END:variables
+
+    private void mostrarErrores() {
+        Errores errs = Errores.getInstance();
+        String encabezado[] = {"Descripción", "Ubicación"};
+        String data[][] = errs.getReporteErrores();
+        DefaultTableModel dtm = new DefaultTableModel(data, encabezado);
+        this.jTable1.setModel(dtm);
+        if(errs.cuentaErrores()>0)
+            jTabbedPane1.setSelectedIndex(1);
+    }
+
 }
