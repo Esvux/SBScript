@@ -11,34 +11,46 @@ public class Nodo {
 
     private String cadena;
     private int rol;
-    private int tipo;    
+    private int subrol;
+    private int tipo;
     private List<Nodo> hijos;
     private List<String> listaAux;
 
-    public Nodo() {
-        this.cadena = "";
-        this.rol = Constantes.NULO;
-        this.tipo = Constantes.T_ERROR;
+    public Nodo(int rol, int tipo, String cadena) {
+        this.cadena = cadena;
+        this.rol = rol;
+        this.subrol = Constantes.NULO;
+        this.tipo = tipo;
         this.hijos = new ArrayList<>();
         this.listaAux = null;
     }
 
     public Nodo(int rol, String cadena) {
-        this.cadena = cadena;
-        this.rol = rol;
-        this.tipo = Constantes.T_ERROR;
-        this.hijos = new ArrayList<>();
-        this.listaAux = null;
+        this(rol, Constantes.T_ERROR, cadena);
     }
 
-    public Nodo(int rol, int tipo, String cadena) {
-        this.cadena = cadena;
-        this.rol = rol;
-        this.tipo = tipo;
-        this.hijos = new ArrayList<>();
-        this.listaAux = null;
+    public Nodo() {
+        this(Constantes.NULO, Constantes.T_ERROR, "");
     }
-    
+
+    public boolean esDeRol(int ... roles) {
+        for (int i = 0; i < roles.length; i++) {
+            if (this.rol == roles[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean esDeTipo(int ... tipos) {
+        for (int i = 0; i < tipos.length; i++) {
+            if (this.tipo == tipos[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public String getCadena() {
         return cadena;
     }
@@ -53,6 +65,14 @@ public class Nodo {
 
     public void setRol(int rol) {
         this.rol = rol;
+    }
+
+    public int getSubrol() {
+        return subrol;
+    }
+
+    public void setSubrol(int subrol) {
+        this.subrol = subrol;
     }
 
     public int getTipo() {
@@ -82,13 +102,20 @@ public class Nodo {
     public void initListaAux() {
         this.listaAux = new ArrayList<>();
     }
-    
+
     public void addAux(String nuevo) {
         this.listaAux.add(nuevo);
     }
-    
-    public void addHijo(Nodo nodo){
+
+    public void addHijo(Nodo nodo) {
         this.hijos.add(nodo);
     }
-    
+
+    public Nodo getHijo(int i) {
+        if (i >= 0 && i < this.hijos.size()) {
+            return this.hijos.get(i);
+        }
+        return null;
+    }
+
 }

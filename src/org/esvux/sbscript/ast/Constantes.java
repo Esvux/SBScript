@@ -28,8 +28,10 @@ public class Constantes {
     public static final int VARIABLE = 5;
     public static final int LLAMADA = 6;
     public static final int ARITMETICA = 7;
-    public static final int RELACIONAL = 8;
-    public static final int LOGICA = 9;
+    public static final int ARITMETICA_UNARIA = 8;
+    public static final int RELACIONAL = 9;
+    public static final int LOGICA = 10;
+    public static final int LOGICA_UNARIA = 10;
     
     public static final int CUERPO = 10;
     public static final int DECLARACION = 11;
@@ -43,27 +45,31 @@ public class Constantes {
     public static final int PARA = 19;
     public static final int PARAMETRO = 20;
     
-    public static final String OP_POT = "^";
-    public static final String OP_MOD = "%";
-    public static final String OP_DIV = "/";
-    public static final String OP_MUL = "*";
-    public static final String OP_RES = "-";
-    public static final String OP_SUM = "+";
+    //OPA = OPerador Aritmético
+    public static final int OPA_POT = 0;
+    public static final int OPA_MOD = 1;
+    public static final int OPA_DIV = 2;
+    public static final int OPA_MUL = 3;
+    public static final int OPA_RES = 4;
+    public static final int OPA_SUM = 5;
+    public static final int OPA_MEN = 6;
     
-    public static final String OP_EQU = "==";
-    public static final String OP_NEQ = "!=";
-    public static final String OP_MAY = ">";
-    public static final String OP_MYE = ">=";
-    public static final String OP_MEN = "<";
-    public static final String OP_MNE = "<=";
+    //OPR = OPerador Relacional
+    public static final int OPR_EQU = 7;
+    public static final int OPR_NEQ = 8;
+    public static final int OPR_MAY = 9;
+    public static final int OPR_MYE = 10;
+    public static final int OPR_MEN = 11;
+    public static final int OPR_MNE = 12;
     
-    public static final String OP_AND = "&&";
-    public static final String OP_OR = "||";
-    public static final String OP_XOR = "¿?";
-    public static final String OP_NOT = "!";
-    
-    public static final String VAL_TRUE = "true";
-    public static final String VAL_FALSE = "false";
+    //OPL = OPerador Lógico
+    public static final int OPL_AND = 13;
+    public static final int OPL_OR  = 14;
+    public static final int OPL_XOR = 15;
+    public static final int OPL_NOT = 16;
+        
+    public static final String VAL_TRUE = "verdadero";
+    public static final String VAL_FALSE = "falso";
     
     
         

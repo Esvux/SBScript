@@ -39,6 +39,15 @@
     }
 
   }
+
+  class Extra {
+    String str;
+    int i;
+    Extra(String str, int i){
+      this.str = str;
+      this.i = i;
+    }
+  }
   PARSER_END(ParserSBScript)
 
 
@@ -48,7 +57,7 @@
   Producción de inicio que se encarga de listar el método principal
   las variables globales y los métodos. En esta producción se usó
   un LOOKAHEAD, que determina el número de caracteres de anticipo
-  para realizar el análisis sintáctico (2 para diferenciar entre
+  para realizar el análisis sintáctico (3 para diferenciar entre
   una definición de método y una declaración de variables). Toda
   esta información se almacena en un objeto programa.
   -----------------------------------------------------------*/
@@ -58,7 +67,7 @@
       met=PRINCIPAL()
       { pro.setPrincipal(met); }
     |
-      LOOKAHEAD(2)
+      LOOKAHEAD(3)
       met=METODO()
       { pro.addMetodo(met); }
     |
@@ -186,40 +195,40 @@
 
 
   /*-----------------------------------------------------------
-    CUERPO -> "{" ( SENTENCIA )* "}"
+    CUERPO -> "{" ( INSTRUCCION )* "}"
   _____________________________________________________________
-  Esta producción agrupa las sentencias, delimitadas por un juego
-  de llaves, en un nodo de tipo CUERPO.
+  Esta producción agrupa las instrucciones, delimitadas por un 
+  juego de llaves, en un nodo de tipo CUERPO.
                ____________
               | CUERPO     |
               |____________|
-                 |     ______________
-                (0)---| SENTENCIA 1  |
-                 |    |______________|
-                (1)---| SENTENCIA 2  |
-                 |    |______________|
+                 |     ________________
+                (0)---| INSTRUCCION 1  |
+                 |    |________________|
+                (1)---| INSTRUCCION 2  |
+                 |    |________________|
                  |         . . .
-                 |     ______________
-                (n)---| SENTENCIA n  |
-                      |______________|
+                 |     ________________
+                (n)---| INSTRUCCION n  |
+                      |________________|
   -----------------------------------------------------------*/
-  Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo sentencia; }
+  Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion; }
   {
-    "{" ( sentencia=SENTENCIA() { nodo.addHijo(sentencia); } )* "}" 
+    "{" ( instruccion=INSTRUCCION() { nodo.addHijo(instruccion); } )* "}" 
     { return nodo; }
   }
 
 
   /*-----------------------------------------------------------
-    SENTENCIA -> ASIGNACION
-              |  LLAMADA
-              |  DEC_LOCAL
-              |  RETORNO
-              |  MOSTRAR
-              |  SI
-              |  SELECCIONA
-              |  MIENTRAS
-              |  PARA
+    INSTRUCCION -> ASIGNACION
+                |  LLAMADA
+                |  DEC_LOCAL
+                |  RETORNO
+                |  MOSTRAR
+                |  SI
+                |  SELECCIONA
+                |  MIENTRAS
+                |  PARA
   _____________________________________________________________
   Esta producción es una producción de transición que concentra 
   todas las instrucciones posibles e incorpora la recuperación de
@@ -228,7 +237,7 @@
   algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
   ID cuando lo que espera es una llamada o una asignación.
   -----------------------------------------------------------*/
-  Nodo SENTENCIA():{ Nodo nodo = new Nodo(); }
+  Nodo INSTRUCCION():{ Nodo nodo = new Nodo(); }
   {
     try{
       ( LOOKAHEAD(2)
@@ -549,14 +558,14 @@
   secuencia de operadores OR aplicados entre dos expresiones 
   lógicas.
   -----------------------------------------------------------*/
-  Nodo LOG_OR():{ Nodo nodo, temp, extra; }
+  Nodo LOG_OR():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=LOG_AND() 
       ( 
-        "||" extra=LOG_AND() 
+        op="||" extra=LOG_AND() 
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(Constantes.OP_OR, temp, extra);
+            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_OR, temp, extra);
           }
       )*
     { return nodo; }
@@ -570,14 +579,14 @@
   secuencia de operadores AND aplicados entre dos expresiones 
   lógicas.
   -----------------------------------------------------------*/
-  Nodo LOG_AND():{ Nodo nodo, temp, extra; }
+  Nodo LOG_AND():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=LOG_XOR() 
       ( 
-        "&&" extra=LOG_XOR() 
+        op="&&" extra=LOG_XOR() 
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(Constantes.OP_AND, temp, extra);
+            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_AND, temp, extra);
           }
       )*
     { return nodo; }
@@ -591,14 +600,14 @@
   secuencia de operadores XOR aplicados entre dos expresiones 
   lógicas.
   -----------------------------------------------------------*/
-  Nodo LOG_XOR():{ Nodo nodo, temp, extra; }
+  Nodo LOG_XOR():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=LOG_NOT() 
       ( 
-        "¿?" extra=LOG_NOT() 
+        op="¿?" extra=LOG_NOT() 
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(Constantes.OP_XOR, temp, extra);
+            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_XOR, temp, extra);
           }
       )*
     { return nodo; }
@@ -612,13 +621,13 @@
   Esta producción admite una única expresión o una negación 
   lógica del valor obtenido por una expresión.
   -----------------------------------------------------------*/
-  Nodo LOG_NOT():{ Nodo nodo, extra; }
+  Nodo LOG_NOT():{ Nodo nodo, extra; Token op; }
   {
     ( 
       nodo=RELACIONAL()
     |
-      "!" extra=LOG_NOT()
-      { nodo = FabricaAST.creaNot(extra); }
+      op="!" extra=LOG_NOT()
+      { nodo = FabricaAST.creaNot(extra, op.image); }
     )
     { return nodo; }
   }
@@ -632,14 +641,14 @@
   dos, expresiones aritméticas. El operador viene dado por la 
   producción OP_REL.
   -----------------------------------------------------------*/
-  Nodo RELACIONAL():{ String op; Nodo nodo, temp, extra; }
+  Nodo RELACIONAL():{ Extra op; Nodo nodo, temp, extra; }
   {
     nodo=ARITM() 
     [ 
       op=OP_REL() extra=ARITM() 
       { 
         temp = FabricaAST.copiar(nodo); 
-        nodo = FabricaAST.creaRelacional(op, temp, extra);
+        nodo = FabricaAST.creaRelacional(op.str, op.i, temp, extra);
       }
     ]
     { return nodo; }
@@ -652,22 +661,22 @@
   Producción que determina el operando a aplicar en una expresión
   de tipo relacional.
   -----------------------------------------------------------*/
-  String OP_REL():{ String op; }
+  Extra OP_REL():{ int op; Token tok; Extra extra; }
   {
     ( 
-      "==" { op = Constantes.OP_EQU;}
+      tok="==" { op = Constantes.OPR_EQU; extra = new Extra(tok.image, op); }
     | 
-      "!=" { op = Constantes.OP_NEQ;}
+      tok="!=" { op = Constantes.OPR_NEQ; extra = new Extra(tok.image, op); }
     | 
-      ">"  { op = Constantes.OP_MAY;}
+      tok=">"  { op = Constantes.OPR_MAY; extra = new Extra(tok.image, op); }
     | 
-      ">=" { op = Constantes.OP_MYE;}
+      tok=">=" { op = Constantes.OPR_MYE; extra = new Extra(tok.image, op); }
     | 
-      "<"  { op = Constantes.OP_MEN;}
+      tok="<"  { op = Constantes.OPR_MEN; extra = new Extra(tok.image, op); }
     | 
-      "<=" { op = Constantes.OP_MNE;}
+      tok="<=" { op = Constantes.OPR_MNE; extra = new Extra(tok.image, op); }
     )
-    { return op; }
+    { return extra; }
   }
 
 
@@ -678,20 +687,20 @@
   términos aplicando cualesquiera de los operandos (+, -) entre
   ellos.
   -----------------------------------------------------------*/
-  Nodo ARITM():{ Nodo nodo, temp, extra; }
+  Nodo ARITM():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=TERM()
       ( 
-        "+" extra=TERM()
+        op="+" extra=TERM()
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_SUM, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_SUM, temp, extra);
           }
       |
-        "-" extra=TERM()
+        op="-" extra=TERM()
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_RES, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_RES, temp, extra);
           }
       )*
     { return nodo; }
@@ -705,26 +714,26 @@
   factores aplicando cualesquiera de los operandos (*, /, %) 
   entre ellos.
   -----------------------------------------------------------*/
-  Nodo TERM():{ Nodo nodo, temp, extra; }
+  Nodo TERM():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=FACT()
       (
-        "*" extra=FACT()
+        op="*" extra=FACT()
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_MUL, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MUL, temp, extra);
           }
       |
-        "/" extra=FACT()
+        op="/" extra=FACT()
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_DIV, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_DIV, temp, extra);
           }
       |
-        "%" extra=FACT()
+        op="%" extra=FACT()
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_MOD, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MOD, temp, extra);
           }
       )*
     { return nodo; }
@@ -737,14 +746,14 @@
   Esta producción admite un único valor, o una seguidilla de 
   valores aplicando el operando ^ entre ellos.
   -----------------------------------------------------------*/
-  Nodo FACT():{ Nodo nodo, temp, extra; }
+  Nodo FACT():{ Nodo nodo, temp, extra; Token op; }
   {
     nodo=VAL()
       ( 
-        "^" extra=VAL() 
+        op="^" extra=VAL() 
           {
             temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(Constantes.OP_POT, temp, extra);
+            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_POT, temp, extra);
           }
       )*
     { return nodo; }
@@ -829,8 +838,8 @@
     | < PR_PARA : "Para" >
     | < DECREMENTO : "--" >
     | < INCREMENTO : "++" >
-    | < TRUE : "true" >
-    | < FALSE : "false" >
+    | < TRUE : "verdadero" >
+    | < FALSE : "falso" >
     | < NUMERO  : (["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ >
     | < CADENA  : "\"" ( (~["\"","\\","\n","\r"]) | ("\\" ["n","t","v","b","r","f","a","\\","?","'","\""] ) )* "\"">
     | < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>

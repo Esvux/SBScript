@@ -29,17 +29,18 @@ public class FabricaAST {
     }
 
     public static Nodo creaTrue() {
-        Nodo nodo = new Nodo(Constantes.TRUE, Constantes.T_BOOL, "true");
+        Nodo nodo = new Nodo(Constantes.TRUE, Constantes.T_BOOL, Constantes.VAL_TRUE);
         return nodo;
     }
 
     public static Nodo creaFalse() {
-        Nodo nodo = new Nodo(Constantes.FALSE, Constantes.T_BOOL, "false");
+        Nodo nodo = new Nodo(Constantes.FALSE, Constantes.T_BOOL, Constantes.VAL_FALSE);
         return nodo;
     }
 
     public static Nodo creaMenosUnario(Nodo val) {
-        Nodo nodo = new Nodo(Constantes.MENOS, "-(unario)");
+        Nodo nodo = new Nodo(Constantes.ARITMETICA_UNARIA, "-(unario)");
+        nodo.setSubrol(Constantes.OPA_MEN);
         nodo.addHijo(val);
         return nodo;
     }
@@ -49,29 +50,33 @@ public class FabricaAST {
         return nodo;
     }
 
-    public static Nodo creaAritmetica(String operador, Nodo izq, Nodo der) {
+    public static Nodo creaAritmetica(String operador, int op, Nodo izq, Nodo der) {
         Nodo nodo = new Nodo(Constantes.ARITMETICA, operador);
+        nodo.setSubrol(op);
         nodo.addHijo(izq);
         nodo.addHijo(der);
         return nodo;
     }
 
-    public static Nodo creaRelacional(String operador, Nodo izq, Nodo der) {
+    public static Nodo creaRelacional(String operador, int op, Nodo izq, Nodo der) {
         Nodo nodo = new Nodo(Constantes.RELACIONAL, operador);
+        nodo.setSubrol(op);
         nodo.addHijo(izq);
         nodo.addHijo(der);
         return nodo;
     }
 
-    public static Nodo creaLogica(String operador, Nodo izq, Nodo der) {
+    public static Nodo creaLogica(String operador, int op, Nodo izq, Nodo der) {
         Nodo nodo = new Nodo(Constantes.LOGICA, operador);
+        nodo.setSubrol(op);
         nodo.addHijo(izq);
         nodo.addHijo(der);
         return nodo;
     }
 
-    public static Nodo creaNot(Nodo negado) {
-        Nodo nodo = new Nodo(Constantes.LOGICA, Constantes.OP_NOT);
+    public static Nodo creaNot(Nodo negado, String str) {
+        Nodo nodo = new Nodo(Constantes.LOGICA_UNARIA, str);
+        nodo.setSubrol(Constantes.OPL_NOT);
         nodo.addHijo(negado);
         return nodo;
     }
@@ -83,6 +88,7 @@ public class FabricaAST {
 
     public static Nodo creaDeclaracion(int tipo, String id) {
         Nodo nodo = new Nodo(Constantes.DECLARACION, tipo, "Declara");
+        nodo.initListaAux();
         nodo.addAux(id);
         return nodo;
     }
