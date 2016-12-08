@@ -47,5 +47,17 @@ public class Resultado {
     public void setTipo(int tipo) {
         this.tipo = tipo;
     }
+    
+    public static Resultado creaCadena(String cadena){
+        return new Resultado(cadena, Constantes.T_STR);
+    }
+
+    public static Resultado creaNumero(String cadena){
+        return new Resultado(cadena, Constantes.T_NUM);
+    }
+
+    public static Resultado creaBooleano(String cadena){
+        return new Resultado(cadena, Constantes.T_BOOL);
+    }
 
 }

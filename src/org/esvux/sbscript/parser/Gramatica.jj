@@ -1,889 +1,1026 @@
-  options {
-    IGNORE_CASE = true;
-    STATIC = false;
+options {
+  IGNORE_CASE = true;
+  STATIC = false;
+}
+
+/*-----------------------------------------------------------
+  DEFINICIÓN DE ELEMENTOS PARA UTILIZAR EN LA CLASE PARSER
+_____________________________________________________________
+En esta sección, delimitada por PARSER_BEGIN y PARSER_END, se
+definen los métodos auxiliares o variables globales que se 
+deseen utilizar dentro de las acciones semánticas.
+ParserSBScript - es el nombre de la clase que parsea la entrada.
+-----------------------------------------------------------*/
+PARSER_BEGIN(ParserSBScript)
+package org.esvux.sbscript.parser;
+
+import org.esvux.sbscript.errores.Errores;
+import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.ast.Metodo;
+import org.esvux.sbscript.ast.Programa;
+import org.esvux.sbscript.ast.FabricaAST;
+import org.esvux.sbscript.ast.Constantes;
+import org.esvux.sbscript.interprete.expresiones.Expresion;
+import org.esvux.sbscript.interprete.Ambito;
+
+/**
+* Clase principal para el análisis (parseo) de la cadena de entrada
+* para SBScript. Para utilizar esta clase se debe cargar la cadena
+* por medio de un StringReader y luego, para realizar el análisis,
+* sobre la instancia creada se debe llamar al método PROGRAMA().
+* @author esvux
+*/
+public class ParserSBScript {
+
+  private Errores err = Errores.getInstance();
+
+  private void reportarError(int fila, int columna, String descError){
+    err.nuevoErrorSintactico(fila, columna, descError);
+    System.err.println(descError);
   }
 
-  /*-----------------------------------------------------------
-    DEFINICIÓN DE ELEMENTOS PARA UTILIZAR EN LA CLASE PARSER
-  _____________________________________________________________
-  En esta sección, delimitada por PARSER_BEGIN y PARSER_END, se
-  definen los métodos auxiliares o variables globales que se 
-  deseen utilizar dentro de las acciones semánticas.
-  ParserSBScript - es el nombre de la clase que parsea la entrada.
-  -----------------------------------------------------------*/
-  PARSER_BEGIN(ParserSBScript)
-  package org.esvux.sbscript.parser;
-
-  import org.esvux.sbscript.errores.Errores;
-  import org.esvux.sbscript.ast.Nodo;
-  import org.esvux.sbscript.ast.Metodo;
-  import org.esvux.sbscript.ast.Programa;
-  import org.esvux.sbscript.ast.FabricaAST;
-  import org.esvux.sbscript.ast.Constantes;
-
-  public class ParserSBScript {
-
-    private Errores err = Errores.getInstance();
-
-    private void reportarError(int fila, int columna, String descError){
-      err.nuevoErrorSintactico(fila, columna, descError);
-      System.err.println(descError);
-    }
-
-    public static void main(String args[]) throws ParseException {
-      ParserSBScript parser = new ParserSBScript(
-        new java.io.StringReader("Num a,b,c;")
-      );
-      parser.PROGRAMA();
-      System.out.println("Análisis concluido!!");
-    }
-
+  public static void main(String args[]) throws ParseException {
+    ParserSBScript parser = new ParserSBScript(
+      new java.io.StringReader("Num a,b,c;")
+    );
+    parser.PROGRAMA();
+    System.out.println("Análisis concluido!!");
   }
 
-  class Extra {
-    String str;
-    int i;
-    Extra(String str, int i){
-      this.str = str;
+}
+
+/**
+* Clase auxiliar adicional para manejar el retorno de dos datos de
+* diferente tipo.
+* @author esvux
+*/
+class Extra {
+
+  Token tok;
+  String str;
+  int i;
+
+  Extra(Token tok, int i) {
+      this.tok = tok;
+      this.str = tok.image;
       this.i = i;
-    }
   }
-  PARSER_END(ParserSBScript)
+
+}
+PARSER_END(ParserSBScript)
 
 
-  /*-----------------------------------------------------------
-    PROGRAMA -> ( PRINCIPAL | METODO | DEC_GLOBAL )+
-  _____________________________________________________________
-  Producción de inicio que se encarga de listar el método principal
-  las variables globales y los métodos. En esta producción se usó
-  un LOOKAHEAD, que determina el número de caracteres de anticipo
-  para realizar el análisis sintáctico (3 para diferenciar entre
-  una definición de método y una declaración de variables). Toda
-  esta información se almacena en un objeto programa.
-  -----------------------------------------------------------*/
-  Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
-  {
-    (
-      met=PRINCIPAL()
-      { pro.setPrincipal(met); }
+/*-----------------------------------------------------------
+  PROGRAMA -> ( PRINCIPAL | METODO | DEC_GLOBAL )+
+_____________________________________________________________
+Producción de inicio que se encarga de listar el método principal
+las variables globales y los métodos. En esta producción se usó
+un LOOKAHEAD, que determina el número de caracteres de anticipo
+para realizar el análisis sintáctico (3 para diferenciar entre
+una definición de método y una declaración de variables). Toda
+esta información se almacena en un objeto programa.
+-----------------------------------------------------------*/
+Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
+{
+  (
+    met=PRINCIPAL()
+    { pro.setPrincipal(met); }
+  |
+    LOOKAHEAD(3)
+    met=METODO()
+    { pro.addMetodo(met); }
+  |
+    dec=DEC_GLOBAL()
+    { pro.addVariables(dec); }
+  )+
+  { return pro; }
+}
+
+
+/*-----------------------------------------------------------
+  PRINCIPAL -> "Principal" "(" ")" CUERPO
+_____________________________________________________________
+Esta producción reconoce un método principal y crea un objeto
+método (al que se le agrega el nodo cuerpo).
+-----------------------------------------------------------*/
+Metodo PRINCIPAL():{ Nodo cuerpo; }
+{
+  <PR_PRINCIPAL> "(" ")"
+  cuerpo=CUERPO()
+  { 
+    Metodo principal = FabricaAST.creaPrincipal();
+    principal.setCuerpo(cuerpo); 
+    return principal;
+  }
+}
+
+
+/*-----------------------------------------------------------
+  TIPO_MET -> "Void"
+           |  "Num"
+           |  "Str"
+           |  "Bool"
+_____________________________________________________________
+Esta producción determina los tipos de dato permitidos para la
+declaración de métodos y retorna un entero que representa el
+tipo de dato reconocido.
+-----------------------------------------------------------*/
+int TIPO_MET():{ int tipo; }
+{
+  ( <T_NUM> 
+    { tipo = Constantes.T_NUM; }
+  | <T_STR> 
+    { tipo = Constantes.T_STR; }
+  | <T_BOOL>
+    { tipo = Constantes.T_BOOL; } 
+  | <T_VOID>
+    { tipo = Constantes.T_VOID; } 
+  )
+  { return tipo; }
+}
+
+
+/*-----------------------------------------------------------
+  METODO -> TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO
+_____________________________________________________________
+Esta producción reconoce un método y crea un objeto método con un
+tipo y un nombre específico, además de agregar al objeto creado,
+los parámetros que acompañan la definición del método, finalmente
+se le agrega el nodo cuerpo.
+-----------------------------------------------------------*/
+Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
+{
+  tipo=TIPO_MET() id=<ID> 
+  { metodo = FabricaAST.creaMetodo(id.image, tipo); }
+  "(" [ tipo=TIPO_VAR() id=<ID> 
+  { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); }
+  ( "," tipo=TIPO_VAR() id=<ID> 
+    { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); } 
+  )* ] ")"
+  cuerpo=CUERPO() 
+  { 
+    metodo.setCuerpo(cuerpo); 
+    return metodo;
+  }
+}
+
+
+/*-----------------------------------------------------------
+  TIPO_VAR -> "Num"
+           |  "Str"
+           |  "Bool"
+_____________________________________________________________
+Esta producción determina los tipos de datos permitidos para la
+declaración de variables y retorna un entero que representa el
+tipo de dato reconocido.
+-----------------------------------------------------------*/
+int TIPO_VAR():{ int tipo; }
+{
+  ( <T_NUM> 
+    { tipo = Constantes.T_NUM; }
+  | <T_STR> 
+    { tipo = Constantes.T_STR; }
+  | <T_BOOL>
+    { tipo = Constantes.T_BOOL; } 
+  )
+  { return tipo; }
+}
+
+
+/*-----------------------------------------------------------
+  DEC_GLOBAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de tipo
+DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
+una lista adicional de strings para almacenar los id's y existe
+un nodo opcional para la expresión de la posible asignación).
+             _____________
+            | DEC_GLOBAL  |
+            |_____________|
+               |     _____________
+              (0)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo DEC_GLOBAL():{ Nodo nodo, exp; int tipo; Token id; }
+{
+  tipo=TIPO_VAR() id=<ID> 
+  { nodo = FabricaAST.creaDeclaracion(tipo, id.image); } 
+  ( "," id=<ID> 
+    { nodo.addAux(id.image); } )* 
+  [ "=" exp=EXP() 
+    { nodo.addHijo(exp); } ] <PYC>
+  { 
+    nodo.setUbicacion(id);
+    return nodo; 
+  }
+}
+
+
+/*-----------------------------------------------------------
+  CUERPO -> "{" ( INSTRUCCION )* "}"
+_____________________________________________________________
+Esta producción agrupa las instrucciones, delimitadas por un 
+juego de llaves, en un nodo de tipo CUERPO.
+             ____________
+            | CUERPO     |
+            |____________|
+               |     ________________
+              (0)---| INSTRUCCION 1  |
+               |    |________________|
+              (1)---| INSTRUCCION 2  |
+               |    |________________|
+               |         . . .
+               |     ________________
+              (n)---| INSTRUCCION n  |
+                    |________________|
+-----------------------------------------------------------*/
+Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion; }
+{
+  "{" ( instruccion=INSTRUCCION() { nodo.addHijo(instruccion); } )* "}" 
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  INSTRUCCION -> ASIGNACION
+              |  LLAMADA
+              |  DEC_LOCAL
+              |  RETORNO
+              |  MOSTRAR
+              |  SI
+              |  SELECCIONA
+              |  MIENTRAS
+              |  PARA
+              |  DETENER
+              |  CONTINUAR
+_____________________________________________________________
+Esta producción es una producción de transición que concentra 
+todas las instrucciones posibles e incorpora la recuperación de
+errores sintácticos, en lo que concierne al AST retorna el nodo
+asociado a cada instrucción o un nodo en blanco si se presenta
+algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
+ID cuando lo que espera es una llamada o una asignación.
+-----------------------------------------------------------*/
+Nodo INSTRUCCION():{ Nodo nodo = new Nodo(); }
+{
+  try{
+    ( LOOKAHEAD(2)
+      nodo=ASIGNACION()
     |
-      LOOKAHEAD(3)
-      met=METODO()
-      { pro.addMetodo(met); }
+      nodo=LLAMADA()
     |
-      dec=DEC_GLOBAL()
-      { pro.addVariables(dec); }
-    )+
-    { return pro; }
-  }
-
-
-  /*-----------------------------------------------------------
-    PRINCIPAL -> "Principal" "(" ")" CUERPO
-  _____________________________________________________________
-  Esta producción reconoce un método principal y crea un objeto
-  método (al que se le agrega el nodo cuerpo).
-  -----------------------------------------------------------*/
-  Metodo PRINCIPAL():{ Nodo cuerpo; }
-  {
-    <PR_PRINCIPAL> "(" ")"
-    cuerpo=CUERPO()
-    { 
-      Metodo principal = FabricaAST.creaPrincipal();
-      principal.setCuerpo(cuerpo); 
-      return principal;
-    }
-  }
-
-
-  /*-----------------------------------------------------------
-    TIPO_MET -> "Void"
-             |  "Num"
-             |  "Str"
-             |  "Bool"
-  _____________________________________________________________
-  Esta producción determina los tipos de dato permitidos para la
-  declaración de métodos y retorna un entero que representa el
-  tipo de dato reconocido.
-  -----------------------------------------------------------*/
-  int TIPO_MET():{ int tipo; }
-  {
-    ( <T_NUM> 
-      { tipo = Constantes.T_NUM; }
-    | <T_STR> 
-      { tipo = Constantes.T_STR; }
-    | <T_BOOL>
-      { tipo = Constantes.T_BOOL; } 
-    | <T_VOID>
-      { tipo = Constantes.T_VOID; } 
+      nodo=DEC_LOCAL()
+    |
+      nodo=RETORNO()
+    |
+      nodo=MOSTRAR()
+    |
+      nodo=SI()
+    |
+      nodo=SELECCIONA()
+    |
+      nodo=MIENTRAS()
+    |
+      nodo=PARA()
+    |
+      nodo=DETENER()
+    |
+      nodo=CONTINUAR()
     )
-    { return tipo; }
+   } catch (ParseException e) {
+    Token t;
+    do {
+      t = getNextToken();
+    } while (t.kind != PYC);
+    reportarError(t.beginLine, t.beginColumn, e.getMessage());
   }
+  { return nodo; }
+}
 
 
-  /*-----------------------------------------------------------
-    METODO -> TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO
-  _____________________________________________________________
-  Esta producción reconoce un método y crea un objeto método con un
-  tipo y un nombre específico, además de agregar al objeto creado,
-  los parámetros que acompañan la definición del método, finalmente
-  se le agrega el nodo cuerpo.
-  -----------------------------------------------------------*/
-  Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
-  {
-    tipo=TIPO_MET() id=<ID> 
-    { metodo = FabricaAST.creaMetodo(id.image, tipo); }
-    "(" [ tipo=TIPO_VAR() id=<ID> 
-    { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); }
-    ( "," tipo=TIPO_VAR() id=<ID> 
-      { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); } 
-    )* ] ")"
-    cuerpo=CUERPO() 
-    { 
-      metodo.setCuerpo(cuerpo); 
-      return metodo;
-    }
+/*-----------------------------------------------------------
+  DEC_LOCAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de tipo
+DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
+una lista adicional de strings para almacenar los id's y existe
+un nodo opcional para la expresión de la posible asignación).
+             ____________
+            | DEC_LOCAL  |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo DEC_LOCAL():{ Nodo nodo, exp; int tipo; Token id; }
+{
+  tipo=TIPO_VAR() id=<ID> 
+  { nodo = FabricaAST.creaDeclaracion(tipo, id.image); }
+  ( "," id=<ID> { nodo.addAux(id.image); } )* 
+  [ "=" exp=EXP() { nodo.addHijo(exp); } ] <PYC>
+  { 
+    nodo.setUbicacion(id);
+    return nodo; 
   }
+}
 
 
-  /*-----------------------------------------------------------
-    TIPO_VAR -> "Num"
-             |  "Str"
-             |  "Bool"
-  _____________________________________________________________
-  Esta producción determina los tipos de datos permitidos para la
-  declaración de variables y retorna un entero que representa el
-  tipo de dato reconocido.
-  -----------------------------------------------------------*/
-  int TIPO_VAR():{ int tipo; }
-  {
-    ( <T_NUM> 
-      { tipo = Constantes.T_NUM; }
-    | <T_STR> 
-      { tipo = Constantes.T_STR; }
-    | <T_BOOL>
-      { tipo = Constantes.T_BOOL; } 
-    )
-    { return tipo; }
+/*-----------------------------------------------------------
+  ASIGNACION -> id "=" EXP ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de tipo
+ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
+principal, el atributo cadena guardará el valor del ID asociado 
+a la asignación).
+             ____________
+            | ASIGNACION |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo ASIGNACION():{ Nodo exp; Token id; }
+{
+  id=<ID> "=" exp=EXP() <PYC>
+  { 
+    Nodo nodo = FabricaAST.creaAsignacion(id.image, exp); 
+    nodo.setUbicacion(id);
+    return nodo;
   }
+}
 
 
-  /*-----------------------------------------------------------
-    DEC_GLOBAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de tipo
-  DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
-  una lista adicional de strings para almacenar los id's y existe
-  un nodo opcional para la expresión de la posible asignación).
-               _____________
-              | DEC_GLOBAL  |
-              |_____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo DEC_GLOBAL():{ Nodo nodo, exp; int tipo; Token id; }
-  {
-    tipo=TIPO_VAR() id=<ID> 
-    { nodo = FabricaAST.creaDeclaracion(tipo, id.image); } 
-    ( "," id=<ID> 
-      { nodo.addAux(id.image); } )* 
-    [ "=" exp=EXP() 
-      { nodo.addHijo(exp); } ] <PYC>
-    { return nodo; }
+/*-----------------------------------------------------------
+  LLAMADA -> id "(" [ EXP ("," EXP)* ] ")" ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de tipo
+LLAMADA y crea la siguiente estructura para el AST (en el nodo 
+principal, el atributo cadena guardará el valor del ID asociado 
+a la llamada, mientras los nodos hijo serán los valores para los
+parámetros).
+             ____________
+            | LLAMADA    |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+               |    |_____________|
+              (1)---| EXPRESION   |
+               |    |_____________|
+               |         . . .
+               |     _____________
+              (n)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo LLAMADA():{ Nodo nodo, exp; Token id; }
+{
+  id=<ID> "(" { nodo = FabricaAST.creaLlamada(id.image); }
+  [ exp=EXP() { nodo.addHijo(exp); }
+  ( "," exp=EXP() { nodo.addHijo(exp); } )* ] ")" <PYC>
+  { 
+    nodo.setUbicacion(id);
+    return nodo; 
   }
+}
 
 
-  /*-----------------------------------------------------------
-    CUERPO -> "{" ( INSTRUCCION )* "}"
-  _____________________________________________________________
-  Esta producción agrupa las instrucciones, delimitadas por un 
-  juego de llaves, en un nodo de tipo CUERPO.
-               ____________
-              | CUERPO     |
-              |____________|
-                 |     ________________
-                (0)---| INSTRUCCION 1  |
-                 |    |________________|
-                (1)---| INSTRUCCION 2  |
-                 |    |________________|
-                 |         . . .
-                 |     ________________
-                (n)---| INSTRUCCION n  |
-                      |________________|
-  -----------------------------------------------------------*/
-  Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion; }
-  {
-    "{" ( instruccion=INSTRUCCION() { nodo.addHijo(instruccion); } )* "}" 
-    { return nodo; }
+/*-----------------------------------------------------------
+  RETORNO -> "Retorno" EXP ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo RETORNO y crea la siguiente estructura para el AST.
+             ____________
+            | RETORNO    |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo RETORNO():{ Nodo exp; Token aux; }
+{
+  aux=<PR_RETORNO> exp=EXP() <PYC>
+  { 
+    Nodo nodo = FabricaAST.creaRetorno(exp); 
+    nodo.setUbicacion(aux);
+    return nodo;
   }
+}
 
 
-  /*-----------------------------------------------------------
-    INSTRUCCION -> ASIGNACION
-                |  LLAMADA
-                |  DEC_LOCAL
-                |  RETORNO
-                |  MOSTRAR
-                |  SI
-                |  SELECCIONA
-                |  MIENTRAS
-                |  PARA
-  _____________________________________________________________
-  Esta producción es una producción de transición que concentra 
-  todas las instrucciones posibles e incorpora la recuperación de
-  errores sintácticos, en lo que concierne al AST retorna el nodo
-  asociado a cada instrucción o un nodo en blanco si se presenta
-  algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
-  ID cuando lo que espera es una llamada o una asignación.
-  -----------------------------------------------------------*/
-  Nodo INSTRUCCION():{ Nodo nodo = new Nodo(); }
-  {
-    try{
-      ( LOOKAHEAD(2)
-        nodo=ASIGNACION()
-      |
-        nodo=LLAMADA()
-      |
-        nodo=DEC_LOCAL()
-      |
-        nodo=RETORNO()
-      |
-        nodo=MOSTRAR()
-      |
-        nodo=SI()
-      |
-        nodo=SELECCIONA()
-      |
-        nodo=MIENTRAS()
-      |
-        nodo=PARA()
-      )
-     } catch (ParseException e) {
-      Token t;
-      do {
-        t = getNextToken();
-      } while (t.kind != PYC);
-      reportarError(t.beginLine, t.beginColumn, e.getMessage());
-    }
-    { return nodo; }
+/*-----------------------------------------------------------
+  MOSTRAR -> "Mostrar" "(" EXP ("," EXP)* ")" ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo MOSTRAR y crea la siguiente estructura para el AST.
+             ____________
+            | MOSTRAR    |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+               |    |_____________|
+              (1)---| EXPRESION   |
+               |    |_____________|
+               |         . . .
+               |     _____________
+              (n)---| EXPRESION   |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo MOSTRAR():{ Nodo nodo, exp; Token aux; }
+{
+  aux=<PR_MOSTRAR> "(" exp=EXP() { nodo = FabricaAST.creaMostrar(exp); }
+  ( "," exp=EXP() { nodo.addHijo(exp); } )* ")" <PYC>
+  { 
+    nodo.setUbicacion(aux);
+    return nodo; 
   }
+}
 
 
-  /*-----------------------------------------------------------
-    DEC_LOCAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de tipo
-  DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
-  una lista adicional de strings para almacenar los id's y existe
-  un nodo opcional para la expresión de la posible asignación).
-               ____________
-              | DEC_LOCAL  |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo DEC_LOCAL():{ Nodo nodo, exp; int tipo; Token id; }
-  {
-    tipo=TIPO_VAR() id=<ID> 
-    { nodo = FabricaAST.creaDeclaracion(tipo, id.image); }
-    ( "," id=<ID> { nodo.addAux(id.image); } )* 
-    [ "=" exp=EXP() { nodo.addHijo(exp); } ] <PYC>
-    { return nodo; }
+/*-----------------------------------------------------------
+  SI -> "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo SI y crea la siguiente estructura para el AST (el SINO es
+opcional, por lo tanto su presencia en el AST también lo es).
+             __________
+            | SI       |
+            |__________|
+               |     _______________
+              (0)---| CONDICION     |
+               |    |_______________|
+              (1)---| CUERPO (SI)   |
+               |    |_______________|
+              (2)---| CUERPO (SINO) |
+                    |_______________|
+-----------------------------------------------------------*/
+Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
+{
+  aux=<PR_SI> "(" cond=EXP() ")" 
+  si=CUERPO() 
+  [ <PR_SINO> sino=CUERPO() ]
+  { 
+    Nodo nodo = FabricaAST.creaSi(cond, si, sino); 
+    nodo.setUbicacion(aux);
+    return nodo;
   }
+}
 
 
-  /*-----------------------------------------------------------
-    ASIGNACION -> id "=" EXP ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de tipo
-  ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
-  principal, el atributo cadena guardará el valor del ID asociado 
-  a la asignación).
-               ____________
-              | ASIGNACION |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo ASIGNACION():{ Nodo exp; Token id; }
-  {
-    id=<ID> "=" exp=EXP() <PYC>
-    { return FabricaAST.creaAsignacion(id.image, exp); }
+/*-----------------------------------------------------------
+  SELECCIONA -> "Selecciona" "(" EXP ")" ( CASO )+
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo SELECCIONA y crea la siguiente estructura para el AST 
+(con un mínimo de un caso establecido).
+             ____________
+            | SELECCIONA |
+            |____________|
+               |     _____________
+              (0)---| EXPRESION   |
+               |    |_____________|
+              (1)---| CASO 1      |
+               |    |_____________|
+              (2)---| CASO 2      |
+               |    |_____________|
+               |         . . .
+               |     _____________
+              (n)---| CASO n      |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo SELECCIONA():{ Nodo nodo, exp, caso; Token aux; }
+{
+  aux=<PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(exp); }
+  ( caso=CASO() { nodo.addHijo(caso); } )+
+  { 
+    nodo.setUbicacion(aux);
+    return nodo;
   }
+}
 
 
-  /*-----------------------------------------------------------
-    LLAMADA -> id "(" [ EXP ("," EXP)* ] ")" ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de tipo
-  LLAMADA y crea la siguiente estructura para el AST (en el nodo 
-  principal, el atributo cadena guardará el valor del ID asociado 
-  a la llamada, mientras los nodos hijo serán los valores para los
-  parámetros).
-               ____________
-              | LLAMADA    |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                 |    |_____________|
-                (1)---| EXPRESION   |
-                 |    |_____________|
-                 |         . . .
-                 |     _____________
-                (n)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo LLAMADA():{ Nodo nodo, exp; Token id; }
-  {
-    id=<ID> "(" { nodo = FabricaAST.creaLlamada(id.image); }
-    [ exp=EXP() { nodo.addHijo(exp); }
-    ( "," exp=EXP() { nodo.addHijo(exp); } )* ] ")" <PYC>
-    { return nodo; }
+/*-----------------------------------------------------------
+  CASO -> NATIVO ":" CUERPO
+_____________________________________________________________
+Esta producción detecta la existencia de un caso, cada caso está
+compuesto por un valor nativo y un cuerpo de instrucciones.
+             __________
+            | CASO     |
+            |__________|
+               |     _____________
+              (0)---| NATIVO      |
+               |    |_____________|
+              (1)---| CUERPO      |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo CASO():{ Nodo valor, cuerpo; Token aux; }
+{
+  valor=NATIVO() aux=":" cuerpo=CUERPO()
+  { 
+    Nodo nodo = FabricaAST.creaCaso(valor, cuerpo); 
+    nodo.setUbicacion(aux);
+    return nodo;    
   }
+}
 
 
-  /*-----------------------------------------------------------
-    RETORNO -> "Retorno" EXP ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de 
-  tipo RETORNO y crea la siguiente estructura para el AST.
-               ____________
-              | RETORNO    |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo RETORNO():{ Nodo exp; }
-  {
-    <PR_RETORNO> exp=EXP() <PYC>
-    { return FabricaAST.creaRetorno(exp); }
+/*-----------------------------------------------------------
+  MIENTRAS -> "Mientras" "(" EXP ")" CUERPO
+_____________________________________________________________
+Esta producción detecta la existencia de un ciclo MIENTRAS, y 
+crea la siguiente estructura para el AST.
+             __________
+            | MIENTRAS |
+            |__________|
+               |     _____________
+              (0)---| CONDICION   |
+               |    |_____________|
+              (1)---| CUERPO      |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo MIENTRAS():{ Nodo exp, cuerpo; Token aux; }
+{
+  aux=<PR_MIENTRAS> "(" exp=EXP() ")" 
+  cuerpo=CUERPO()
+  { 
+    Nodo nodo = FabricaAST.creaMientras(exp, cuerpo); 
+    nodo.setUbicacion(aux);
+    return nodo;
   }
+}
 
 
-  /*-----------------------------------------------------------
-    MOSTRAR -> "Mostrar" "(" EXP ("," EXP)* ")" ";"
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de 
-  tipo MOSTRAR y crea la siguiente estructura para el AST.
-               ____________
-              | MOSTRAR    |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                 |    |_____________|
-                (1)---| EXPRESION   |
-                 |    |_____________|
-                 |         . . .
-                 |     _____________
-                (n)---| EXPRESION   |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo MOSTRAR():{ Nodo nodo, exp; }
-  {
-    <PR_MOSTRAR> "(" exp=EXP() { nodo = FabricaAST.creaMostrar(exp); }
-    ( "," exp=EXP() { nodo.addHijo(exp); } )* ")" <PYC>
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    SI -> "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de 
-  tipo SI y crea la siguiente estructura para el AST (el SINO es
-  opcional, por lo tanto su presencia en el AST también lo es).
-               __________
-              | SI       |
-              |__________|
-                 |     _______________
-                (0)---| CONDICION     |
-                 |    |_______________|
-                (1)---| CUERPO (SI)   |
-                 |    |_______________|
-                (2)---| CUERPO (SINO) |
-                      |_______________|
-  -----------------------------------------------------------*/
-  Nodo SI():{ Nodo cond, si; Nodo sino = null; }
-  {
-    <PR_SI> "(" cond=EXP() ")" 
-    si=CUERPO() 
-    [ <PR_SINO> sino=CUERPO() ]
-    { return FabricaAST.creaSi(cond, si, sino); }
-  }
-
-
-  /*-----------------------------------------------------------
-    SELECCIONA -> "Selecciona" "(" EXP ")" ( CASO )+
-  _____________________________________________________________
-  Esta producción detecta la existencia de una instrucción de 
-  tipo SELECCIONA y crea la siguiente estructura para el AST 
-  (con un mínimo de un caso establecido).
-               ____________
-              | SELECCIONA |
-              |____________|
-                 |     _____________
-                (0)---| EXPRESION   |
-                 |    |_____________|
-                (1)---| CASO 1      |
-                 |    |_____________|
-                (2)---| CASO 2      |
-                 |    |_____________|
-                 |         . . .
-                 |     _____________
-                (n)---| CASO n      |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo SELECCIONA():{ Nodo nodo, exp, caso; }
-  {
-    <PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(exp); }
-    ( caso=CASO() { nodo.addHijo(caso); } )+
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    CASO -> NATIVO ":" CUERPO
-  _____________________________________________________________
-  Esta producción detecta la existencia de un caso, cada caso está
-  compuesto por un valor nativo y un cuerpo de instrucciones.
-               __________
-              | CASO     |
-              |__________|
-                 |     _____________
-                (0)---| NATIVO      |
-                 |    |_____________|
-                (1)---| CUERPO      |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo CASO():{ Nodo valor, cuerpo; }
-  {
-    valor=NATIVO() ":" cuerpo=CUERPO()
-    { return FabricaAST.creaCaso(valor, cuerpo); }
-  }
-
-
-  /*-----------------------------------------------------------
-    MIENTRAS -> "Mientras" "(" EXP ")" CUERPO
-  _____________________________________________________________
-  Esta producción detecta la existencia de un ciclo MIENTRAS, y 
-  crea la siguiente estructura para el AST.
-               __________
-              | MIENTRAS |
-              |__________|
-                 |     _____________
-                (0)---| CONDICION   |
-                 |    |_____________|
-                (1)---| CUERPO      |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo MIENTRAS():{ Nodo exp, cuerpo; }
-  {
-    <PR_MIENTRAS> "(" exp=EXP() ")" 
-    cuerpo=CUERPO()
-    { return FabricaAST.creaMientras(exp, cuerpo); }
-  }
-
-
-  /*-----------------------------------------------------------
-    PARA -> "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO
-  _____________________________________________________________
-  Esta producción detecta la existencia de un ciclo PARA, y crea
-  la siguiente estructura para el AST (el atributo cadena lleva
-  el valor 'para++' o 'para--' según lo dicta la entrada).
-               __________
-              | PARA     |
-              |__________|
-                 |     _____________
-                (0)---| DECLARACION |
-                 |    |_____________|
-                (1)---| CONDICION   |
-                 |    |_____________|
-                (2)---| CUERPO      |
-                      |_____________|
-  -----------------------------------------------------------*/
-  Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token token; Token id; int tipo; }
-  {
-    <PR_PARA> "(" 
-    tipo=TIPO_VAR() id=<ID> 
-    { dec = FabricaAST.creaDeclaracion(tipo, id.image); }
-    "=" exp=EXP() <PYC> { dec.addHijo(exp); }
+/*-----------------------------------------------------------
+  PARA -> "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO
+_____________________________________________________________
+Esta producción detecta la existencia de un ciclo PARA, y crea
+la siguiente estructura para el AST (el atributo cadena lleva
+el valor 'para++' o 'para--' según lo dicta la entrada).
+             __________
+            | PARA     |
+            |__________|
+               |     _____________
+              (0)---| DECLARACION |
+               |    |_____________|
+              (1)---| CONDICION   |
+               |    |_____________|
+              (2)---| CUERPO      |
+                    |_____________|
+-----------------------------------------------------------*/
+Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token id, aux; int tipo, subrol; }
+{
+  aux=<PR_PARA> "(" 
+    tipo=TIPO_VAR() id=<ID> { dec = FabricaAST.creaDeclaracion(tipo, id.image); }
+    "=" exp=EXP() <PYC>     { dec.addHijo(exp); }
     cond=EXP() <PYC> 
-    ( token=<INCREMENTO> | token=<DECREMENTO> ) ")" 
-    cuerpo=CUERPO()
-    { return FabricaAST.creaPara(dec, cond, cuerpo, token.image); }
-  }
-
-
-  /*-----------------------------------------------------------
-    EXP -> LOG_OR
-  _____________________________________________________________
-  Esta producción inicia el trayecto para definir una expresión
-  dentro de SBScript, expresión que puede ser de tipo lógica,
-  relacional, aritmética o un valor puntual. A continuación se
-  detalla la precedencia que se le asigna a cada operador.
-   __________________________________________________________
-  | Operación                | Operador       | Precedencia  |
-  |__________________________________________________________|
-  | OR lógico                |  "||"          |   0 (menor)  |
-  | AND lógico               |  "&&"          |   1          |
-  | XOR lógico               |  "¿?"          |   2          |
-  | NOT lógico               |  "!"           |   3          |
-  | Comparación relacional   |  Ver OP_REL()  |   4          |
-  | Suma o concatenación     |  "+"           |   5          |
-  | Resta                    |  "-"           |   5          |
-  | Multiplicación           |  "*"           |   6          |
-  | División                 |  "/"           |   6          |
-  | Módulo                   |  "%"           |   6          |
-  | Potenciación             |  "^"           |   7          |
-  | Menos (unario)           |  "-"           |   8          |
-  | Símbolos de agrupación   |  Paréntesis    |   9 (mayor)  |
-  |__________________________|________________|______________|
-
-  -----------------------------------------------------------*/
-  Nodo EXP():{ Nodo nodo; }
-  {
-    nodo=LOG_OR()
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    LOG_OR -> LOG_AND ("||" LOG_AND)*
-  _____________________________________________________________
-  Esta producción admite una única expresión lógica o una
-  secuencia de operadores OR aplicados entre dos expresiones 
-  lógicas.
-  -----------------------------------------------------------*/
-  Nodo LOG_OR():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=LOG_AND() 
-      ( 
-        op="||" extra=LOG_AND() 
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_OR, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    LOG_AND -> LOG_XOR ("&&" LOG_XOR)*
-  _____________________________________________________________
-  Esta producción admite una única expresión lógica o una
-  secuencia de operadores AND aplicados entre dos expresiones 
-  lógicas.
-  -----------------------------------------------------------*/
-  Nodo LOG_AND():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=LOG_XOR() 
-      ( 
-        op="&&" extra=LOG_XOR() 
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_AND, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    LOG_XOR -> LOG_NOT ("¿?" LOG_NOT)*
-  _____________________________________________________________
-  Esta producción admite una única expresión lógica o una
-  secuencia de operadores XOR aplicados entre dos expresiones 
-  lógicas.
-  -----------------------------------------------------------*/
-  Nodo LOG_XOR():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=LOG_NOT() 
-      ( 
-        op="¿?" extra=LOG_NOT() 
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_XOR, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    LOG_NOT -> RELACIONAL
-            |  "!" LOG_NOT
-  _____________________________________________________________
-  Esta producción admite una única expresión o una negación 
-  lógica del valor obtenido por una expresión.
-  -----------------------------------------------------------*/
-  Nodo LOG_NOT():{ Nodo nodo, extra; Token op; }
-  {
     ( 
-      nodo=RELACIONAL()
+      <INCREMENTO> { subrol = Constantes.INCREMENTO; } 
+    | 
+      <DECREMENTO> { subrol = Constantes.DECREMENTO; } 
+    ) 
+  ")"
+  cuerpo=CUERPO()
+  { 
+    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, subrol); 
+    nodo.setUbicacion(aux);
+    return nodo;
+  }
+}
+
+
+/*-----------------------------------------------------------
+  DETENER -> "Detener" ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo DETENER (crea un nodo simple para el AST).
+             __________
+            | DETENER  |
+            |__________|
+-----------------------------------------------------------*/
+Nodo DETENER():{ Token aux; }
+{
+  aux=<PR_DETENER> <PYC>
+  { 
+    Nodo nodo = FabricaAST.creaDetener(); 
+    nodo.setUbicacion(aux);
+    return nodo;
+  }
+}
+
+
+/*-----------------------------------------------------------
+  CONTINUAR -> "Continuar" ";"
+_____________________________________________________________
+Esta producción detecta la existencia de una instrucción de 
+tipo CONTINUAR (crea un nodo simple para el AST).
+             ____________
+            | CONTINUAR  |
+            |____________|
+-----------------------------------------------------------*/
+Nodo CONTINUAR():{ Token aux; }
+{
+  aux=<PR_CONTINUAR> <PYC>
+  { 
+    Nodo nodo = FabricaAST.creaContinuar(); 
+    nodo.setUbicacion(aux);
+    return nodo;
+  }
+}
+
+
+/*-----------------------------------------------------------
+  EXP -> LOG_OR
+_____________________________________________________________
+Esta producción inicia el trayecto para definir una expresión
+dentro de SBScript, expresión que puede ser de tipo lógica,
+relacional, aritmética o un valor puntual. A continuación se
+detalla la precedencia que se le asigna a cada operador por
+medio de la estructura de la gramática.
+ __________________________________________________________
+| Operación                | Operador       | Precedencia  |
+|__________________________________________________________|
+| OR lógico                |  "||"          |   0 (menor)  |
+| AND lógico               |  "&&"          |   1          |
+| XOR lógico               |  "¿?"          |   2          |
+| NOT lógico               |  "!"           |   3          |
+| Comparación relacional   |  Ver OP_REL()  |   4          |
+| Suma o concatenación     |  "+"           |   5          |
+| Resta                    |  "-"           |   5          |
+| Multiplicación           |  "*"           |   6          |
+| División                 |  "/"           |   6          |
+| Módulo                   |  "%"           |   6          |
+| Potenciación             |  "^"           |   7          |
+| Menos (unario)           |  "-"           |   8          |
+| Símbolos de agrupación   |  Paréntesis    |   9 (mayor)  |
+|__________________________|________________|______________|
+
+-----------------------------------------------------------*/
+Nodo EXP():{ Nodo nodo; }
+{
+  nodo=LOG_OR()
+  { 
+    Expresion exp = new Expresion(nodo);
+    System.out.println(exp.resolver(new Ambito()).getValor());
+    return nodo; 
+  }
+}
+
+
+/*-----------------------------------------------------------
+  LOG_OR -> LOG_AND ("||" LOG_AND)*
+_____________________________________________________________
+Esta producción admite una única expresión lógica o una
+secuencia de operadores OR aplicados entre dos expresiones 
+lógicas.
+-----------------------------------------------------------*/
+Nodo LOG_OR():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=LOG_AND() 
+    ( 
+      op="||" extra=LOG_AND() 
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_OR, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  LOG_AND -> LOG_XOR ("&&" LOG_XOR)*
+_____________________________________________________________
+Esta producción admite una única expresión lógica o una
+secuencia de operadores AND aplicados entre dos expresiones 
+lógicas.
+-----------------------------------------------------------*/
+Nodo LOG_AND():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=LOG_XOR() 
+    ( 
+      op="&&" extra=LOG_XOR() 
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_AND, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  LOG_XOR -> LOG_NOT ("¿?" LOG_NOT)*
+_____________________________________________________________
+Esta producción admite una única expresión lógica o una
+secuencia de operadores XOR aplicados entre dos expresiones 
+lógicas.
+-----------------------------------------------------------*/
+Nodo LOG_XOR():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=LOG_NOT() 
+    ( 
+      op="¿?" extra=LOG_NOT() 
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_XOR, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  LOG_NOT -> RELACIONAL
+          |  "!" LOG_NOT
+_____________________________________________________________
+Esta producción admite una única expresión o una negación 
+lógica del valor obtenido por una expresión.
+-----------------------------------------------------------*/
+Nodo LOG_NOT():{ Nodo nodo, extra; Token op; }
+{
+  ( 
+    nodo=RELACIONAL()
+  |
+    op="!" extra=LOG_NOT()
+    { 
+      nodo = FabricaAST.creaNot(extra, op.image); 
+      nodo.setUbicacion(op);
+    }
+  )
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  RELACIONAL -> ARITM (OP_REL ARITM)
+_____________________________________________________________
+Esta producción admite una única expresión aritmétcia, o una
+operación de índole relacional (comparativa) entre dos, y solo
+dos, expresiones aritméticas. El operador viene dado por la 
+producción OP_REL.
+-----------------------------------------------------------*/
+Nodo RELACIONAL():{ Extra op; Nodo nodo, temp, extra; }
+{
+  nodo=ARITM() 
+  [ 
+    op=OP_REL() extra=ARITM() 
+    { 
+      temp = FabricaAST.copiar(nodo); 
+      nodo = FabricaAST.creaRelacional(op.str, op.i, temp, extra);
+      nodo.setUbicacion(op.tok);
+    }
+  ]
+  { return nodo; }
+}
+
+
+/*-----------------------------------------------------------
+  OP_REL -> ("==" | "!=" | ">" | ">=" | "<" | "<=")
+_____________________________________________________________
+Producción que determina el operando a aplicar en una expresión
+de tipo relacional.
+-----------------------------------------------------------*/
+Extra OP_REL():{ int op; Token tok; Extra extra; }
+{
+  ( 
+    tok="==" { op = Constantes.OPR_EQU; extra = new Extra(tok, op); }
+  | 
+    tok="!=" { op = Constantes.OPR_NEQ; extra = new Extra(tok, op); }
+  | 
+    tok=">"  { op = Constantes.OPR_MAY; extra = new Extra(tok, op); }
+  | 
+    tok=">=" { op = Constantes.OPR_MYE; extra = new Extra(tok, op); }
+  | 
+    tok="<"  { op = Constantes.OPR_MEN; extra = new Extra(tok, op); }
+  | 
+    tok="<=" { op = Constantes.OPR_MNE; extra = new Extra(tok, op); }
+  )
+  { return extra; }
+}
+
+
+/*-----------------------------------------------------------
+  ARTIM -> TERM ("+" TERM | "-" TERM)*
+_____________________________________________________________
+Esta producción admite un único término, o una seguidilla de 
+términos aplicando cualesquiera de los operandos (+, -) entre
+ellos.
+-----------------------------------------------------------*/
+Nodo ARITM():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=TERM()
+    ( 
+      op="+" extra=TERM()
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_SUM, temp, extra);
+          nodo.setUbicacion(op);
+        }
     |
-      op="!" extra=LOG_NOT()
-      { nodo = FabricaAST.creaNot(extra, op.image); }
-    )
-    { return nodo; }
-  }
+      op="-" extra=TERM()
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_RES, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
 
 
-  /*-----------------------------------------------------------
-    RELACIONAL -> ARITM (OP_REL ARITM)
-  _____________________________________________________________
-  Esta producción admite una única expresión aritmétcia, o una
-  operación de índole relacional (comparativa) entre dos, y solo
-  dos, expresiones aritméticas. El operador viene dado por la 
-  producción OP_REL.
-  -----------------------------------------------------------*/
-  Nodo RELACIONAL():{ Extra op; Nodo nodo, temp, extra; }
-  {
-    nodo=ARITM() 
-    [ 
-      op=OP_REL() extra=ARITM() 
-      { 
-        temp = FabricaAST.copiar(nodo); 
-        nodo = FabricaAST.creaRelacional(op.str, op.i, temp, extra);
-      }
-    ]
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    OP_REL -> ("==" | "!=" | ">" | ">=" | "<" | "<=")
-  _____________________________________________________________
-  Producción que determina el operando a aplicar en una expresión
-  de tipo relacional.
-  -----------------------------------------------------------*/
-  Extra OP_REL():{ int op; Token tok; Extra extra; }
-  {
-    ( 
-      tok="==" { op = Constantes.OPR_EQU; extra = new Extra(tok.image, op); }
-    | 
-      tok="!=" { op = Constantes.OPR_NEQ; extra = new Extra(tok.image, op); }
-    | 
-      tok=">"  { op = Constantes.OPR_MAY; extra = new Extra(tok.image, op); }
-    | 
-      tok=">=" { op = Constantes.OPR_MYE; extra = new Extra(tok.image, op); }
-    | 
-      tok="<"  { op = Constantes.OPR_MEN; extra = new Extra(tok.image, op); }
-    | 
-      tok="<=" { op = Constantes.OPR_MNE; extra = new Extra(tok.image, op); }
-    )
-    { return extra; }
-  }
-
-
-  /*-----------------------------------------------------------
-    ARTIM -> TERM ("+" TERM | "-" TERM)*
-  _____________________________________________________________
-  Esta producción admite un único término, o una seguidilla de 
-  términos aplicando cualesquiera de los operandos (+, -) entre
-  ellos.
-  -----------------------------------------------------------*/
-  Nodo ARITM():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=TERM()
-      ( 
-        op="+" extra=TERM()
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_SUM, temp, extra);
-          }
-      |
-        op="-" extra=TERM()
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_RES, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    TERM -> FACT ("*" FACT | "/" FACT | "%" FACT)*
-  _____________________________________________________________
-  Esta producción admite un único factor, o una seguidilla de 
-  factores aplicando cualesquiera de los operandos (*, /, %) 
-  entre ellos.
-  -----------------------------------------------------------*/
-  Nodo TERM():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=FACT()
-      (
-        op="*" extra=FACT()
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MUL, temp, extra);
-          }
-      |
-        op="/" extra=FACT()
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_DIV, temp, extra);
-          }
-      |
-        op="%" extra=FACT()
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MOD, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-    FACT -> VAL ("^" VAL)*
-  _____________________________________________________________
-  Esta producción admite un único valor, o una seguidilla de 
-  valores aplicando el operando ^ entre ellos.
-  -----------------------------------------------------------*/
-  Nodo FACT():{ Nodo nodo, temp, extra; Token op; }
-  {
-    nodo=VAL()
-      ( 
-        op="^" extra=VAL() 
-          {
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_POT, temp, extra);
-          }
-      )*
-    { return nodo; }
-  }
-
-
-  /*-----------------------------------------------------------
-     VAL -> "(" EXP ")"
-          | "-" VAL
-          | id [ "(" [ EXP ("," EXP)* ] ")" ]
-          | NATIVO
-  _____________________________________________________________
-  Esta producción puede reconocer la agrupación de expresiones por
-  medio de paréntesis; o un menos unario aplicado a un valor; o un 
-  acceso a una variable; o una llamada a un método (con 0 o más 
-  valores en sus parámetros); o un dato nativo.
-  -----------------------------------------------------------*/
-  Nodo VAL():{ Nodo nodo, temp; Token token; }
-  {
+/*-----------------------------------------------------------
+  TERM -> FACT ("*" FACT | "/" FACT | "%" FACT)*
+_____________________________________________________________
+Esta producción admite un único factor, o una seguidilla de 
+factores aplicando cualesquiera de los operandos (*, /, %) 
+entre ellos.
+-----------------------------------------------------------*/
+Nodo TERM():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=FACT()
     (
-      "(" nodo=EXP() ")"
+      op="*" extra=FACT()
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MUL, temp, extra);
+          nodo.setUbicacion(op);
+        }
     |
-      "-" temp=VAL()
-      { nodo = FabricaAST.creaMenosUnario(temp); }
+      op="/" extra=FACT()
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_DIV, temp, extra);
+          nodo.setUbicacion(op);
+        }
     |
-      token=<ID> 
-        { nodo = FabricaAST.creaAccesoID(token.image); } 
-      [ "(" { nodo.setRol(Constantes.LLAMADA); } 
-        [ temp=EXP() { nodo.addHijo(temp); } 
-          ( "," temp=EXP() { nodo.addHijo(temp); } )* ] ")" ]
-    |
-      nodo=NATIVO()
-    )
-    { return nodo; }
-  }
+      op="%" extra=FACT()
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MOD, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
 
 
-  /*-----------------------------------------------------------
-  NATIVO -> numero
-          | cadena
-          | true
-          | false
-  _____________________________________________________________
-  Esta producción reconoce los datos básicos del lenguaje, un 
-  número, una cadena o un booleano en sus dos posibles valores.
-  -----------------------------------------------------------*/
-  Nodo NATIVO():{ Nodo nodo; Token token; }
-  {
+/*-----------------------------------------------------------
+  FACT -> VAL ("^" VAL)*
+_____________________________________________________________
+Esta producción admite un único valor, o una seguidilla de 
+valores aplicando el operando ^ entre ellos.
+-----------------------------------------------------------*/
+Nodo FACT():{ Nodo nodo, temp, extra; Token op; }
+{
+  nodo=VAL()
     ( 
-      token=<NUMERO> 
-      { nodo = FabricaAST.creaNumero(token.image); }
-    | 
-      token=<CADENA> 
-      { nodo = FabricaAST.creaCadena(token.image); }
-    | 
-      <TRUE> 
-      { nodo = FabricaAST.creaTrue(); }
-    | 
-      <FALSE>
-      { nodo = FabricaAST.creaFalse(); }
-    )
-    { return nodo; }
-  }
-    
-
-  //--------------------------------------
-  //     Definición de reglas léxicas
-  //--------------------------------------
-  TOKEN:{
-      < PYC : ";" >
-    | < T_NUM : "Num" >
-    | < T_STR : "Str" >
-    | < T_BOOL : "Bool" >
-    | < T_VOID : "Void" >
-    | < PR_PRINCIPAL : "Principal" >
-    | < PR_MOSTRAR : "Mostrar" >
-    | < PR_RETORNO : "Retorno" >
-    | < PR_SI : "Si" >
-    | < PR_SINO : "Sino" >
-    | < PR_SELECCIONA : "Selecciona" >
-    | < PR_MIENTRAS : "Mientras" >
-    | < PR_PARA : "Para" >
-    | < DECREMENTO : "--" >
-    | < INCREMENTO : "++" >
-    | < TRUE : "verdadero" >
-    | < FALSE : "falso" >
-    | < NUMERO  : (["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ >
-    | < CADENA  : "\"" ( (~["\"","\\","\n","\r"]) | ("\\" ["n","t","v","b","r","f","a","\\","?","'","\""] ) )* "\"">
-    | < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>
-  }
+      op="^" extra=VAL() 
+        {
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_POT, temp, extra);
+          nodo.setUbicacion(op);
+        }
+    )*
+  { return nodo; }
+}
 
 
-  //--------------------------------------
-  //           Tokens ignorados
-  //--------------------------------------
-  SKIP: { " " | "\n" | "\t" | "\r" }
-
-
-  //--------------------------------------
-  //       Definición de comentarios
-  //--------------------------------------
-  MORE :
-  {
-    "//" : IN_SINGLE_LINE_COMMENT
+/*-----------------------------------------------------------
+   VAL -> "(" EXP ")"
+        | "-" VAL
+        | id [ "(" [ EXP ("," EXP)* ] ")" ]
+        | NATIVO
+_____________________________________________________________
+Esta producción puede reconocer la agrupación de expresiones por
+medio de paréntesis; o un menos unario aplicado a un valor; o un 
+acceso a una variable; o una llamada a un método (con 0 o más 
+valores en sus parámetros); o un dato nativo.
+-----------------------------------------------------------*/
+Nodo VAL():{ Nodo nodo, temp; Token token, aux; }
+{
+  (
+    "(" nodo=EXP() ")"
   |
-    <"/*" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+    aux="-" temp=VAL()
+    { 
+      nodo = FabricaAST.creaMenosUnario(temp); 
+      nodo.setUbicacion(aux);
+    }
   |
-    "*/" : IN_MULTI_LINE_COMMENT
-  }
+    token=<ID> 
+      { 
+        nodo = FabricaAST.creaAccesoID(token.image); 
+        nodo.setUbicacion(token);
+      } 
+    [ "(" { nodo.setRol(Constantes.LLAMADA); } 
+      [ temp=EXP() { nodo.addHijo(temp); } 
+        ( "," temp=EXP() { nodo.addHijo(temp); } )* ] ")" ]
+  |
+    nodo=NATIVO()
+  )
+  { return nodo; }
+}
 
-  <IN_SINGLE_LINE_COMMENT>
-  SPECIAL_TOKEN :
-  {
-    <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
-  }
 
-  <IN_FORMAL_COMMENT>
-  SPECIAL_TOKEN :
-  {
-    <FORMAL_COMMENT: "*/" > : DEFAULT
+/*-----------------------------------------------------------
+NATIVO -> numero
+        | cadena
+        | true
+        | false
+_____________________________________________________________
+Esta producción reconoce los datos básicos del lenguaje, un 
+número, una cadena o un booleano en sus dos posibles valores.
+-----------------------------------------------------------*/
+Nodo NATIVO():{ Nodo nodo; Token tok; }
+{
+  ( 
+    tok=<NUMERO> 
+    { nodo = FabricaAST.creaNumero(tok.image); }
+  | 
+    tok=<CADENA> 
+    { nodo = FabricaAST.creaCadena(tok.image); }
+  | 
+    tok=<TRUE> 
+    { nodo = FabricaAST.creaTrue(); }
+  | 
+    tok=<FALSE>
+    { nodo = FabricaAST.creaFalse(); }
+  )
+  { 
+    nodo.setUbicacion(tok);
+    return nodo; 
   }
+}
+  
 
-  <IN_MULTI_LINE_COMMENT>
-  SPECIAL_TOKEN :
-  {
-    <MULTI_LINE_COMMENT: "*/" > : DEFAULT
-  }
+//--------------------------------------
+//     Definición de reglas léxicas
+//--------------------------------------
+TOKEN:{
+    < PYC : ";" >
+  | < T_NUM : "Num" >
+  | < T_STR : "Str" >
+  | < T_BOOL : "Bool" >
+  | < T_VOID : "Void" >
+  | < PR_PRINCIPAL : "Principal" >
+  | < PR_MOSTRAR : "Mostrar" >
+  | < PR_RETORNO : "Retorno" >
+  | < PR_SI : "Si" >
+  | < PR_SINO : "Sino" >
+  | < PR_SELECCIONA : "Selecciona" >
+  | < PR_MIENTRAS : "Mientras" >
+  | < PR_DETENER : "Detener" >
+  | < PR_CONTINUAR : "Continuar" >
+  | < PR_PARA : "Para" >
+  | < DECREMENTO : "--" >
+  | < INCREMENTO : "++" >
+  | < TRUE : "verdadero" >
+  | < FALSE : "falso" >
+  | < NUMERO  : (["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ >
+  | < CADENA  : "\"" ( (~["\"","\\","\n","\r"]) | ("\\" ["n","t","v","b","r","f","a","\\","?","'","\""] ) )* "\"">
+  | < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>
+}
 
-  <IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
-  MORE :
-  {
-    < ~[] >
-  }
+
+//--------------------------------------
+//           Tokens ignorados
+//--------------------------------------
+SKIP: { " " | "\n" | "\t" | "\r" }
+
+
+//--------------------------------------
+//       Definición de comentarios
+//--------------------------------------
+MORE :
+{
+  "//" : IN_SINGLE_LINE_COMMENT
+|
+  <"/*" ~["/"]> { input_stream.backup(1); } : IN_FORMAL_COMMENT
+|
+  "*/" : IN_MULTI_LINE_COMMENT
+}
+
+<IN_SINGLE_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <SINGLE_LINE_COMMENT: "\n" | "\r" | "\r\n" > : DEFAULT
+}
+
+<IN_FORMAL_COMMENT>
+SPECIAL_TOKEN :
+{
+  <FORMAL_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_MULTI_LINE_COMMENT>
+SPECIAL_TOKEN :
+{
+  <MULTI_LINE_COMMENT: "*/" > : DEFAULT
+}
+
+<IN_SINGLE_LINE_COMMENT,IN_FORMAL_COMMENT,IN_MULTI_LINE_COMMENT>
+MORE :
+{
+  < ~[] >
+}

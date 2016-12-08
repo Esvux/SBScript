@@ -12,7 +12,6 @@ public class Constantes {
     public static final int ERR_GENERAL = 3;
     public static final String ERRORES[] = { "Léxico", "Sintáctico", "Semántico", "General" };
     
-
     public static final int T_NUM = 0;
     public static final int T_STR = 1;
     public static final int T_BOOL = 2;
@@ -31,19 +30,21 @@ public class Constantes {
     public static final int ARITMETICA_UNARIA = 8;
     public static final int RELACIONAL = 9;
     public static final int LOGICA = 10;
-    public static final int LOGICA_UNARIA = 10;
+    public static final int LOGICA_UNARIA = 11;
     
-    public static final int CUERPO = 10;
-    public static final int DECLARACION = 11;
-    public static final int ASIGNACION = 12;
-    public static final int RETORNO = 13;
-    public static final int MOSTRAR = 14;
-    public static final int SI = 15;
-    public static final int SELECCIONA = 16;
-    public static final int CASO = 17;
-    public static final int MIENTRAS = 18;
-    public static final int PARA = 19;
-    public static final int PARAMETRO = 20;
+    public static final int CUERPO = 20;
+    public static final int DECLARACION = 21;
+    public static final int ASIGNACION = 22;
+    public static final int RETORNO = 23;
+    public static final int MOSTRAR = 24;
+    public static final int SI = 25;
+    public static final int SELECCIONA = 26;
+    public static final int CASO = 27;
+    public static final int MIENTRAS = 28;
+    public static final int PARA = 29;
+    public static final int DETENER = 30;
+    public static final int CONTINUAR = 31;
+    public static final int PARAMETRO = 32;
     
     //OPA = OPerador Aritmético
     public static final int OPA_POT = 0;
@@ -67,10 +68,31 @@ public class Constantes {
     public static final int OPL_OR  = 14;
     public static final int OPL_XOR = 15;
     public static final int OPL_NOT = 16;
+
+    public static final int INCREMENTO = 17;
+    public static final int DECREMENTO = 18;
+    public static final int GLOBAL = 0;
         
     public static final String VAL_TRUE = "verdadero";
     public static final String VAL_FALSE = "falso";
     
+    //Matrices de tipos
+    public static final int MT_SUMA [][] = {
+        //T_NUM    T_STR    T_BOOL   T_VOID   T_ERROR
+        { T_NUM,   T_STR,   T_NUM,   T_ERROR, T_ERROR }, //T_NUM
+        { T_STR,   T_STR,   T_STR,   T_ERROR, T_ERROR }, //T_STR
+        { T_NUM,   T_STR,   T_ERROR, T_ERROR, T_ERROR }, //T_BOOL
+        { T_ERROR, T_ERROR, T_ERROR, T_ERROR, T_ERROR }, //T_VOID
+        { T_ERROR, T_ERROR, T_ERROR, T_ERROR, T_ERROR }  //T_ERROR
+    };        
     
-        
+    public static boolean esAlgunoDeEstos(int rol_tipo, int ... roles_tipos){
+        for (int i = 0; i < roles_tipos.length; i++) {
+            if (rol_tipo == roles_tipos[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

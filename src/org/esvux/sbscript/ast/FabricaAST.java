@@ -11,10 +11,13 @@ public class FabricaAST {
     public static Nodo copiar(Nodo nodo) {
         Nodo copia = new Nodo();
         copia.setRol(nodo.getRol());
+        copia.setSubrol(nodo.getSubrol());
         copia.setTipo(nodo.getTipo());
         copia.setCadena(nodo.getCadena());
         copia.setHijos(new ArrayList<>(nodo.getHijos()));
-        copia.setListaAux(new ArrayList<>(nodo.getListaAux()));
+        if (nodo.getListaAux() != null) {
+            copia.setListaAux(new ArrayList<>(nodo.getListaAux()));
+        }
         return copia;
     }
 
@@ -146,11 +149,22 @@ public class FabricaAST {
         return nodo;
     }
 
-    public static Nodo creaPara(Nodo dec, Nodo cond, Nodo cuerpo, String diff) {
-        Nodo nodo = new Nodo(Constantes.PARA, "Para" + diff);
+    public static Nodo creaPara(Nodo dec, Nodo cond, Nodo cuerpo, int subrol) {
+        Nodo nodo = new Nodo(Constantes.PARA, "Para");
+        nodo.setSubrol(subrol);
         nodo.addHijo(dec);
         nodo.addHijo(cond);
         nodo.addHijo(cuerpo);
+        return nodo;
+    }
+    
+    public static Nodo creaDetener() {
+        Nodo nodo = new Nodo(Constantes.DETENER, "Detener");
+        return nodo;
+    }
+
+    public static Nodo creaContinuar() {
+        Nodo nodo = new Nodo(Constantes.CONTINUAR, "Continuar");
         return nodo;
     }
 
@@ -158,13 +172,13 @@ public class FabricaAST {
         Metodo metodo = new Metodo("Principal", Constantes.T_VOID);
         return metodo;
     }
-    
+
     public static Metodo creaMetodo(String nombre, int tipo) {
         Metodo metodo = new Metodo(nombre, tipo);
         return metodo;
     }
-    
-    public static Nodo creaParametro(String nombre, int tipo){
+
+    public static Nodo creaParametro(String nombre, int tipo) {
         Nodo nodo = new Nodo(Constantes.PARAMETRO, tipo, nombre);
         return nodo;
     }

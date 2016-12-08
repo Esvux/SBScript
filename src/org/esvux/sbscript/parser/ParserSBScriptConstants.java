@@ -35,27 +35,31 @@ public interface ParserSBScriptConstants {
   /** RegularExpression Id. */
   int PR_MIENTRAS = 35;
   /** RegularExpression Id. */
-  int PR_PARA = 36;
+  int PR_DETENER = 36;
   /** RegularExpression Id. */
-  int DECREMENTO = 37;
+  int PR_CONTINUAR = 37;
   /** RegularExpression Id. */
-  int INCREMENTO = 38;
+  int PR_PARA = 38;
   /** RegularExpression Id. */
-  int TRUE = 39;
+  int DECREMENTO = 39;
   /** RegularExpression Id. */
-  int FALSE = 40;
+  int INCREMENTO = 40;
   /** RegularExpression Id. */
-  int NUMERO = 41;
+  int TRUE = 41;
   /** RegularExpression Id. */
-  int CADENA = 42;
+  int FALSE = 42;
   /** RegularExpression Id. */
-  int ID = 43;
+  int NUMERO = 43;
   /** RegularExpression Id. */
-  int SINGLE_LINE_COMMENT = 51;
+  int CADENA = 44;
   /** RegularExpression Id. */
-  int FORMAL_COMMENT = 52;
+  int ID = 45;
   /** RegularExpression Id. */
-  int MULTI_LINE_COMMENT = 53;
+  int SINGLE_LINE_COMMENT = 53;
+  /** RegularExpression Id. */
+  int FORMAL_COMMENT = 54;
+  /** RegularExpression Id. */
+  int MULTI_LINE_COMMENT = 55;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -104,6 +108,8 @@ public interface ParserSBScriptConstants {
     "\"Sino\"",
     "\"Selecciona\"",
     "\"Mientras\"",
+    "\"Detener\"",
+    "\"Continuar\"",
     "\"Para\"",
     "\"--\"",
     "\"++\"",
@@ -117,12 +123,12 @@ public interface ParserSBScriptConstants {
     "\"\\t\"",
     "\"\\r\"",
     "\"//\"",
-    "<token of kind 49>",
+    "<token of kind 51>",
     "\"*/\"",
     "<SINGLE_LINE_COMMENT>",
     "\"*/\"",
     "\"*/\"",
-    "<token of kind 54>",
+    "<token of kind 56>",
   };
 
 }

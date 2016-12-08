@@ -2,6 +2,7 @@ package org.esvux.sbscript.ast;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.esvux.sbscript.parser.Token;
 
 /**
  *
@@ -13,6 +14,8 @@ public class Nodo {
     private int rol;
     private int subrol;
     private int tipo;
+    private int linea;
+    private int columna;
     private List<Nodo> hijos;
     private List<String> listaAux;
 
@@ -21,6 +24,8 @@ public class Nodo {
         this.rol = rol;
         this.subrol = Constantes.NULO;
         this.tipo = tipo;
+        this.linea = 0;
+        this.columna = 0;
         this.hijos = new ArrayList<>();
         this.listaAux = null;
     }
@@ -116,6 +121,11 @@ public class Nodo {
             return this.hijos.get(i);
         }
         return null;
+    }
+    
+    public void setUbicacion(Token tok){
+        this.linea = tok.beginLine;
+        this.columna = tok.beginColumn;
     }
 
 }
