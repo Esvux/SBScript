@@ -2,7 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -21,7 +21,7 @@ public abstract class ExpresionAbstracta {
         this.operando = operando;
     }
 
-    public abstract Resultado resolver(Ambito ctx);
+    public abstract Resultado resolver(Contexto ctx);
 
     protected int validarTipos(int tipoIzq, int tipoDer, int[][] matrizDeTipos) {
         if (tipoIzq < 0 && tipoIzq >= matrizDeTipos.length) {

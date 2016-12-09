@@ -2,8 +2,10 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
+import org.esvux.sbscript.interprete.Variable;
+import org.esvux.sbscript.interprete.instrucciones.InstruccionAbstracta;
 
 /**
  *
@@ -16,7 +18,7 @@ public class Expresion extends ExpresionAbstracta {
     }
 
     @Override
-    public Resultado resolver(Ambito ctx) {
+    public Resultado resolver(Contexto ctx) {
         int rol = izq.getRol();
         int subrol = izq.getSubrol();
         Resultado res = new Resultado();
@@ -37,7 +39,16 @@ public class Expresion extends ExpresionAbstracta {
                 res = new ExpresionRelacional(izq.getHijo(0), izq.getHijo(1), subrol).resolver(ctx);
                 break;
             case Constantes.VARIABLE:
-                //Resolver variable con el contexto actual
+                Variable var = InstruccionAbstracta.obtenerVariable(ctx, izq.getCadena());
+                if(var==null){
+                    //Reportar error, la variable no existe
+                    return new Resultado();
+                }
+                if(var.getValor()==null){
+                    //Reportar error, variable sin valor asignado
+                    return new Resultado();
+                }
+                res = new Resultado(var.getValor(), var.getTipo());
                 break;
             default:
                 if (izq.esDeRol(Constantes.NUMERO, Constantes.CADENA, Constantes.TRUE, Constantes.FALSE)) {

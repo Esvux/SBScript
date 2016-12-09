@@ -131,6 +131,7 @@ public class Inicio extends javax.swing.JFrame {
         if (evt.getKeyCode() == KeyEvent.VK_F5) {
             Interprete i = new Interprete(this.jTextPane_Programa.getText());
             i.analizar();
+            i.ejecutar();
             mostrarErrores();
         }
     }//GEN-LAST:event_jTextPane_ProgramaKeyReleased

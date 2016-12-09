@@ -60,4 +60,8 @@ public class Resultado {
         return new Resultado(cadena, Constantes.T_BOOL);
     }
 
+    public static Resultado creaOK(){
+        return new Resultado("Ok", Constantes.T_VOID);
+    }
+
 }

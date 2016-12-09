@@ -3,14 +3,14 @@ options {
   STATIC = false;
 }
 
-/*-----------------------------------------------------------
-  DEFINICIÓN DE ELEMENTOS PARA UTILIZAR EN LA CLASE PARSER
-_____________________________________________________________
-En esta sección, delimitada por PARSER_BEGIN y PARSER_END, se
-definen los métodos auxiliares o variables globales que se 
-deseen utilizar dentro de las acciones semánticas.
-ParserSBScript - es el nombre de la clase que parsea la entrada.
------------------------------------------------------------*/
+/**
+*  DEFINICIÓN DE ELEMENTOS PARA UTILIZAR EN LA CLASE PARSER
+* ____________________________________________________________
+* En esta sección, delimitada por PARSER_BEGIN y PARSER_END, se
+* definen los métodos auxiliares o variables globales que se 
+* deseen utilizar dentro de las acciones semánticas.
+* ParserSBScript - es el nombre de la clase que se generará.
+*/
 PARSER_BEGIN(ParserSBScript)
 package org.esvux.sbscript.parser;
 
@@ -69,17 +69,16 @@ class Extra {
 }
 PARSER_END(ParserSBScript)
 
-
-/*-----------------------------------------------------------
-  PROGRAMA -> ( PRINCIPAL | METODO | DEC_GLOBAL )+
-_____________________________________________________________
-Producción de inicio que se encarga de listar el método principal
-las variables globales y los métodos. En esta producción se usó
-un LOOKAHEAD, que determina el número de caracteres de anticipo
-para realizar el análisis sintáctico (3 para diferenciar entre
-una definición de método y una declaración de variables). Toda
-esta información se almacena en un objeto programa.
------------------------------------------------------------*/
+/**
+* Producción de inicio que se encarga de listar el método principal
+* las variables globales y los métodos. En esta producción se usó
+* un LOOKAHEAD, que determina el número de caracteres de anticipo
+* para realizar el análisis sintáctico (3 para diferenciar entre
+* una definición de método y una declaración de variables). Toda
+* esta información se almacena en un objeto programa.<br><br>
+* {@code PROGRAMA ::= ( PRINCIPAL | METODO | DEC_GLOBAL )+ }
+* @return Objeto programa con toda la información de SBScript.
+*/
 Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
 {
   (
@@ -97,12 +96,12 @@ Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
 }
 
 
-/*-----------------------------------------------------------
-  PRINCIPAL -> "Principal" "(" ")" CUERPO
-_____________________________________________________________
-Esta producción reconoce un método principal y crea un objeto
-método (al que se le agrega el nodo cuerpo).
------------------------------------------------------------*/
+/**
+* Esta producción reconoce un método principal y crea un objeto
+* método (al que se le agrega el nodo cuerpo).<br><br>
+* {@code PRINCIPAL ::= "Principal" "(" ")" CUERPO }
+* @return Objeto metodo principal.
+*/
 Metodo PRINCIPAL():{ Nodo cuerpo; }
 {
   <PR_PRINCIPAL> "(" ")"
@@ -115,16 +114,14 @@ Metodo PRINCIPAL():{ Nodo cuerpo; }
 }
 
 
-/*-----------------------------------------------------------
-  TIPO_MET -> "Void"
-           |  "Num"
-           |  "Str"
-           |  "Bool"
-_____________________________________________________________
-Esta producción determina los tipos de dato permitidos para la
-declaración de métodos y retorna un entero que representa el
-tipo de dato reconocido.
------------------------------------------------------------*/
+/**
+* Esta producción determina los tipos de dato permitidos para la
+* declaración de métodos y retorna un entero que representa el
+* tipo de dato reconocido. <br><br>
+* {@code TIPO_MET ::= "Void" | "Num" | "Str" | "Bool" }
+* @return Entero que representa el tipo reconocido (incluido el 
+* tipo Void).
+*/
 int TIPO_MET():{ int tipo; }
 {
   ( <T_NUM> 
@@ -140,14 +137,14 @@ int TIPO_MET():{ int tipo; }
 }
 
 
-/*-----------------------------------------------------------
-  METODO -> TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO
-_____________________________________________________________
-Esta producción reconoce un método y crea un objeto método con un
-tipo y un nombre específico, además de agregar al objeto creado,
-los parámetros que acompañan la definición del método, finalmente
-se le agrega el nodo cuerpo.
------------------------------------------------------------*/
+/**
+* Esta producción reconoce un método y crea un objeto método con un
+* tipo y un nombre específico, además de agregar al objeto creado,
+* los parámetros que acompañan la definición del método, finalmente
+* se le agrega el nodo cuerpo.<br><br>
+* {@code METODO ::= TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO}
+* @return Objeto método, con nombre y cuerpo propio.
+*/
 Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
 {
   tipo=TIPO_MET() id=<ID> 
@@ -165,15 +162,13 @@ Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
 }
 
 
-/*-----------------------------------------------------------
-  TIPO_VAR -> "Num"
-           |  "Str"
-           |  "Bool"
-_____________________________________________________________
-Esta producción determina los tipos de datos permitidos para la
-declaración de variables y retorna un entero que representa el
-tipo de dato reconocido.
------------------------------------------------------------*/
+/**
+* Esta producción determina los tipos de datos permitidos para la
+* declaración de variables y retorna un entero que representa el
+* tipo de dato reconocido.<br><br>
+* {@code TIPO_VAR ::= "Num" | "Str" | "Bool"}
+* @return Entero que representa el tipo reconocido.
+*/
 int TIPO_VAR():{ int tipo; }
 {
   ( <T_NUM> 
@@ -187,20 +182,22 @@ int TIPO_VAR():{ int tipo; }
 }
 
 
-/*-----------------------------------------------------------
-  DEC_GLOBAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
-una lista adicional de strings para almacenar los id's y existe
-un nodo opcional para la expresión de la posible asignación).
-             _____________
-            | DEC_GLOBAL  |
-            |_____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
+* una lista adicional de strings para almacenar los id's y existe
+* un nodo opcional para la expresión de la posible asignación).<br><br>
+* {@code DEC_GLOBAL ::= TIPO_VAR id ("," id) [ "=" EXP ] ";"}
+* <pre>
+*             _____________
+*            | DEC_GLOBAL  |
+*            |_____________|
+*               |     _____________
+*              (0)---| EXPRESION   |
+*                    |_____________|
+* </pre>
+* @return Nodo con rol Constantes.DECLARACION.
+*/
 Nodo DEC_GLOBAL():{ Nodo nodo, exp; int tipo; Token id; }
 {
   tipo=TIPO_VAR() id=<ID> 
@@ -216,24 +213,26 @@ Nodo DEC_GLOBAL():{ Nodo nodo, exp; int tipo; Token id; }
 }
 
 
-/*-----------------------------------------------------------
-  CUERPO -> "{" ( INSTRUCCION )* "}"
-_____________________________________________________________
-Esta producción agrupa las instrucciones, delimitadas por un 
-juego de llaves, en un nodo de tipo CUERPO.
-             ____________
-            | CUERPO     |
-            |____________|
-               |     ________________
-              (0)---| INSTRUCCION 1  |
-               |    |________________|
-              (1)---| INSTRUCCION 2  |
-               |    |________________|
-               |         . . .
-               |     ________________
-              (n)---| INSTRUCCION n  |
-                    |________________|
------------------------------------------------------------*/
+/**
+* Esta producción agrupa las instrucciones, delimitadas por un 
+* juego de llaves, en un nodo de tipo CUERPO.<br><br>
+* {@code CUERPO ::= "{" ( INSTRUCCION )* "}" }
+* <pre>
+*              ____________
+*             | CUERPO     |
+*             |____________|
+*                |     ________________
+*               (0)---| INSTRUCCION 1  |
+*                |    |________________|
+*               (1)---| INSTRUCCION 2  |
+*                |    |________________|
+*                |         . . .
+*                |     ________________
+*               (n)---| INSTRUCCION n  |
+*                     |________________|
+* </pre>
+* @return Nodo con rol Constantes.CUERPO.
+*/
 Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion; }
 {
   "{" ( instruccion=INSTRUCCION() { nodo.addHijo(instruccion); } )* "}" 
@@ -241,26 +240,28 @@ Nodo CUERPO():{ Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion; }
 }
 
 
-/*-----------------------------------------------------------
-  INSTRUCCION -> ASIGNACION
-              |  LLAMADA
-              |  DEC_LOCAL
-              |  RETORNO
-              |  MOSTRAR
-              |  SI
-              |  SELECCIONA
-              |  MIENTRAS
-              |  PARA
-              |  DETENER
-              |  CONTINUAR
-_____________________________________________________________
-Esta producción es una producción de transición que concentra 
-todas las instrucciones posibles e incorpora la recuperación de
-errores sintácticos, en lo que concierne al AST retorna el nodo
-asociado a cada instrucción o un nodo en blanco si se presenta
-algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
-ID cuando lo que espera es una llamada o una asignación.
------------------------------------------------------------*/
+/**
+* Esta producción es una producción de transición que concentra 
+* todas las instrucciones posibles e incorpora la recuperación de
+* errores sintácticos, en lo que concierne al AST retorna el nodo
+* asociado a cada instrucción o un nodo en blanco si se presenta
+* algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
+* ID cuando lo que espera es una llamada o una asignación.<br><br>
+* <pre>
+* INSTRUCCION ::= ASIGNACION
+*              |  LLAMADA
+*              |  DEC_LOCAL
+*              |  RETORNO
+*              |  MOSTRAR
+*              |  SI
+*              |  SELECCIONA
+*              |  MIENTRAS
+*              |  PARA
+*              |  DETENER
+*              |  CONTINUAR
+* </pre>
+* @return Nodo con el rol de la instrucción detectada.
+*/
 Nodo INSTRUCCION():{ Nodo nodo = new Nodo(); }
 {
   try{
@@ -298,20 +299,22 @@ Nodo INSTRUCCION():{ Nodo nodo = new Nodo(); }
 }
 
 
-/*-----------------------------------------------------------
-  DEC_LOCAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
-una lista adicional de strings para almacenar los id's y existe
-un nodo opcional para la expresión de la posible asignación).
-             ____________
-            | DEC_LOCAL  |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
+* una lista adicional de strings para almacenar los id's y existe
+* un nodo opcional para la expresión de la posible asignación).<br><br>
+* {@code DEC_LOCAL ::= TIPO_VAR id ("," id) [ "=" EXP ] ";"}
+* <pre>
+*             ____________
+*            | DEC_LOCAL  |
+*            |____________|
+*               |     _____________
+*              (0)---| EXPRESION   |
+*                    |_____________|
+* </pre>
+* @return Nodo con rol Constantes.DECLARACION.
+*/
 Nodo DEC_LOCAL():{ Nodo nodo, exp; int tipo; Token id; }
 {
   tipo=TIPO_VAR() id=<ID> 
@@ -325,20 +328,21 @@ Nodo DEC_LOCAL():{ Nodo nodo, exp; int tipo; Token id; }
 }
 
 
-/*-----------------------------------------------------------
-  ASIGNACION -> id "=" EXP ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
-principal, el atributo cadena guardará el valor del ID asociado 
-a la asignación).
-             ____________
-            | ASIGNACION |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
+* principal, el atributo cadena guardará el valor del ID asociado 
+* a la asignación).<br><br>
+* {@code ASIGNACION ::= id "=" EXP ";"}
+* <pre>
+*              ____________
+*             | ASIGNACION |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+*/
 Nodo ASIGNACION():{ Nodo exp; Token id; }
 {
   id=<ID> "=" exp=EXP() <PYC>
@@ -350,27 +354,29 @@ Nodo ASIGNACION():{ Nodo exp; Token id; }
 }
 
 
-/*-----------------------------------------------------------
-  LLAMADA -> id "(" [ EXP ("," EXP)* ] ")" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-LLAMADA y crea la siguiente estructura para el AST (en el nodo 
-principal, el atributo cadena guardará el valor del ID asociado 
-a la llamada, mientras los nodos hijo serán los valores para los
-parámetros).
-             ____________
-            | LLAMADA    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| EXPRESION   |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* LLAMADA y crea la siguiente estructura para el AST (en el nodo 
+* principal, el atributo cadena guardará el valor del ID asociado 
+* a la llamada, mientras los nodos hijo serán los valores para los
+* parámetros).<br><br>
+* {@code LLAMADA ::= id "(" [ EXP ("," EXP)* ] ")" ";"}
+* <pre>
+*              ____________
+*             | LLAMADA    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| EXPRESION   |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.LLAMADA.
+*/
 Nodo LLAMADA():{ Nodo nodo, exp; Token id; }
 {
   id=<ID> "(" { nodo = FabricaAST.creaLlamada(id.image); }
@@ -383,18 +389,20 @@ Nodo LLAMADA():{ Nodo nodo, exp; Token id; }
 }
 
 
-/*-----------------------------------------------------------
-  RETORNO -> "Retorno" EXP ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo RETORNO y crea la siguiente estructura para el AST.
-             ____________
-            | RETORNO    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo RETORNO y crea la siguiente estructura para el AST.<br><br>
+* {@code RETORNO ::= "Retorno" EXP ";"}
+* <pre>
+*              ____________
+*             | RETORNO    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.RETORNO.
+*/
 Nodo RETORNO():{ Nodo exp; Token aux; }
 {
   aux=<PR_RETORNO> exp=EXP() <PYC>
@@ -406,24 +414,26 @@ Nodo RETORNO():{ Nodo exp; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  MOSTRAR -> "Mostrar" "(" EXP ("," EXP)* ")" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo MOSTRAR y crea la siguiente estructura para el AST.
-             ____________
-            | MOSTRAR    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| EXPRESION   |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo MOSTRAR y crea la siguiente estructura para el AST.<br><br>
+* {@code MOSTRAR ::= "Mostrar" "(" EXP ("," EXP)* ")" ";"}
+* <pre>
+*              ____________
+*             | MOSTRAR    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| EXPRESION   |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.MOSTRAR.
+*/
 Nodo MOSTRAR():{ Nodo nodo, exp; Token aux; }
 {
   aux=<PR_MOSTRAR> "(" exp=EXP() { nodo = FabricaAST.creaMostrar(exp); }
@@ -435,23 +445,25 @@ Nodo MOSTRAR():{ Nodo nodo, exp; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  SI -> "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo SI y crea la siguiente estructura para el AST (el SINO es
-opcional, por lo tanto su presencia en el AST también lo es).
-             __________
-            | SI       |
-            |__________|
-               |     _______________
-              (0)---| CONDICION     |
-               |    |_______________|
-              (1)---| CUERPO (SI)   |
-               |    |_______________|
-              (2)---| CUERPO (SINO) |
-                    |_______________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo SI y crea la siguiente estructura para el AST (el SINO es
+* opcional, por lo tanto su presencia en el AST también lo es).<br><br>
+* {@code SI ::= "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]}
+* <pre>
+*              __________
+*             | SI       |
+*             |__________|
+*                |     _______________
+*               (0)---| CONDICION     |
+*                |    |_______________|
+*               (1)---| CUERPO (SI)   |
+*                |    |_______________|
+*               (2)---| CUERPO (SINO) |
+*                     |_______________|
+* </pre>
+* @return Nodo con rol Constantes.SI.
+*/
 Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
 {
   aux=<PR_SI> "(" cond=EXP() ")" 
@@ -465,27 +477,29 @@ Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  SELECCIONA -> "Selecciona" "(" EXP ")" ( CASO )+
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo SELECCIONA y crea la siguiente estructura para el AST 
-(con un mínimo de un caso establecido).
-             ____________
-            | SELECCIONA |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| CASO 1      |
-               |    |_____________|
-              (2)---| CASO 2      |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| CASO n      |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo SELECCIONA y crea la siguiente estructura para el AST 
+* (con un mínimo de un caso establecido).<br><br>
+* {@code SELECCIONA ::= "Selecciona" "(" EXP ")" ( CASO )+}
+* <pre>
+*              ____________
+*             | SELECCIONA |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| CASO 1      |
+*                |    |_____________|
+*               (2)---| CASO 2      |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| CASO n      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.SELECCIONA.
+*/
 Nodo SELECCIONA():{ Nodo nodo, exp, caso; Token aux; }
 {
   aux=<PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(exp); }
@@ -497,20 +511,22 @@ Nodo SELECCIONA():{ Nodo nodo, exp, caso; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  CASO -> NATIVO ":" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un caso, cada caso está
-compuesto por un valor nativo y un cuerpo de instrucciones.
-             __________
-            | CASO     |
-            |__________|
-               |     _____________
-              (0)---| NATIVO      |
-               |    |_____________|
-              (1)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de un caso, cada caso está
+* compuesto por un valor nativo y un cuerpo de instrucciones.<br><br>
+* {@code CASO ::= NATIVO ":" CUERPO}
+* <pre>
+*              __________
+*             | CASO     |
+*             |__________|
+*                |     _____________
+*               (0)---| NATIVO      |
+*                |    |_____________|
+*               (1)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.CASO.
+*/
 Nodo CASO():{ Nodo valor, cuerpo; Token aux; }
 {
   valor=NATIVO() aux=":" cuerpo=CUERPO()
@@ -522,20 +538,22 @@ Nodo CASO():{ Nodo valor, cuerpo; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  MIENTRAS -> "Mientras" "(" EXP ")" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un ciclo MIENTRAS, y 
-crea la siguiente estructura para el AST.
-             __________
-            | MIENTRAS |
-            |__________|
-               |     _____________
-              (0)---| CONDICION   |
-               |    |_____________|
-              (1)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de un ciclo MIENTRAS, y 
+* crea la siguiente estructura para el AST. <br><br>
+* {@code MIENTRAS ::= "Mientras" "(" EXP ")" CUERPO}
+* <pre>
+*              __________
+*             | MIENTRAS |
+*             |__________|
+*                |     _____________
+*               (0)---| CONDICION   |
+*                |    |_____________|
+*               (1)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.MIENTRAS.
+*/
 Nodo MIENTRAS():{ Nodo exp, cuerpo; Token aux; }
 {
   aux=<PR_MIENTRAS> "(" exp=EXP() ")" 
@@ -548,23 +566,26 @@ Nodo MIENTRAS():{ Nodo exp, cuerpo; Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  PARA -> "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un ciclo PARA, y crea
-la siguiente estructura para el AST (el atributo cadena lleva
-el valor 'para++' o 'para--' según lo dicta la entrada).
-             __________
-            | PARA     |
-            |__________|
-               |     _____________
-              (0)---| DECLARACION |
-               |    |_____________|
-              (1)---| CONDICION   |
-               |    |_____________|
-              (2)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
+/**
+* _____________________________________________________________
+* Esta producción detecta la existencia de un ciclo PARA, y crea
+* la siguiente estructura para el AST (el atributo cadena lleva
+* el valor 'para++' o 'para--' según lo dicta la entrada).<br><br>
+* {@code PARA ::= "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO}
+* <pre>
+*              __________
+*             | PARA     |
+*             |__________|
+*                |     _____________
+*               (0)---| DECLARACION |
+*                |    |_____________|
+*               (1)---| CONDICION   |
+*                |    |_____________|
+*               (2)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.PARA.
+*/
 Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token id, aux; int tipo, subrol; }
 {
   aux=<PR_PARA> "(" 
@@ -586,15 +607,17 @@ Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token id, aux; int tipo, subrol; }
 }
 
 
-/*-----------------------------------------------------------
-  DETENER -> "Detener" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo DETENER (crea un nodo simple para el AST).
-             __________
-            | DETENER  |
-            |__________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo DETENER (crea un nodo simple para el AST).<br><br>
+* {@code DETENER ::= "Detener" ";"}
+* <pre>
+*              __________
+*             | DETENER  |
+*             |__________|
+* </pre>
+* @return Nodo con rol Constantes.DETENER.
+*/
 Nodo DETENER():{ Token aux; }
 {
   aux=<PR_DETENER> <PYC>
@@ -606,15 +629,17 @@ Nodo DETENER():{ Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  CONTINUAR -> "Continuar" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo CONTINUAR (crea un nodo simple para el AST).
-             ____________
-            | CONTINUAR  |
-            |____________|
------------------------------------------------------------*/
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo CONTINUAR (crea un nodo simple para el AST).<br><br>
+* {@code CONTINUAR ::= "Continuar" ";"}
+* <pre>
+*              ____________
+*             | CONTINUAR  |
+*             |____________|
+* </pre>
+* @return Nodo con rol Constantes.CONTINUAR.
+*/
 Nodo CONTINUAR():{ Token aux; }
 {
   aux=<PR_CONTINUAR> <PYC>
@@ -626,33 +651,34 @@ Nodo CONTINUAR():{ Token aux; }
 }
 
 
-/*-----------------------------------------------------------
-  EXP -> LOG_OR
-_____________________________________________________________
-Esta producción inicia el trayecto para definir una expresión
-dentro de SBScript, expresión que puede ser de tipo lógica,
-relacional, aritmética o un valor puntual. A continuación se
-detalla la precedencia que se le asigna a cada operador por
-medio de la estructura de la gramática.
- __________________________________________________________
-| Operación                | Operador       | Precedencia  |
-|__________________________________________________________|
-| OR lógico                |  "||"          |   0 (menor)  |
-| AND lógico               |  "&&"          |   1          |
-| XOR lógico               |  "¿?"          |   2          |
-| NOT lógico               |  "!"           |   3          |
-| Comparación relacional   |  Ver OP_REL()  |   4          |
-| Suma o concatenación     |  "+"           |   5          |
-| Resta                    |  "-"           |   5          |
-| Multiplicación           |  "*"           |   6          |
-| División                 |  "/"           |   6          |
-| Módulo                   |  "%"           |   6          |
-| Potenciación             |  "^"           |   7          |
-| Menos (unario)           |  "-"           |   8          |
-| Símbolos de agrupación   |  Paréntesis    |   9 (mayor)  |
-|__________________________|________________|______________|
-
------------------------------------------------------------*/
+/**
+* Esta producción inicia el trayecto para definir una expresión
+* dentro de SBScript, expresión que puede ser de tipo lógica,
+* relacional, aritmética o un valor puntual. A continuación se
+* detalla la precedencia que se le asigna a cada operador por
+* medio de la estructura de la gramática.<br><br>
+* {@code EXP ::= LOG_OR}
+* <pre>
+*  _______________________________________________________
+* | Operación              | Operador      | Precedencia  |
+* |_______________________________________________________|
+* | OR lógico              |  "||"         |   0 (menor)  |
+* | AND lógico             |  "&amp;&amp;"         |   1          |
+* | XOR lógico             |  "¿?"         |   2          |
+* | NOT lógico             |  "!"          |   3          |
+* | Comparación relacional |  Ver OP_REL() |   4          |
+* | Suma o concatenación   |  "+"          |   5          |
+* | Resta                  |  "-"          |   5          |
+* | Multiplicación         |  "*"          |   6          |
+* | División               |  "/"          |   6          |
+* | Módulo                 |  "%"          |   6          |
+* | Potenciación           |  "^"          |   7          |
+* | Menos (unario)         |  "-"          |   8          |
+* | Símbolos de agrupación |  Paréntesis   |   9 (mayor)  |
+* |________________________|_______________|______________|
+* </pre>
+* @return Nodo con el rol de la última expresión detectada.
+*/
 Nodo EXP():{ Nodo nodo; }
 {
   nodo=LOG_OR()
@@ -664,13 +690,14 @@ Nodo EXP():{ Nodo nodo; }
 }
 
 
-/*-----------------------------------------------------------
-  LOG_OR -> LOG_AND ("||" LOG_AND)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores OR aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores OR aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_OR ::= LOG_AND ("||" LOG_AND)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA 
+* y el subrol Constantes.OPL_OR.
+*/
 Nodo LOG_OR():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=LOG_AND() 
@@ -686,13 +713,14 @@ Nodo LOG_OR():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  LOG_AND -> LOG_XOR ("&&" LOG_XOR)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores AND aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores AND aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_AND ::= LOG_XOR ("&&" LOG_XOR)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA y 
+* el subrol Constantes.OPL_AND.
+*/
 Nodo LOG_AND():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=LOG_XOR() 
@@ -708,13 +736,14 @@ Nodo LOG_AND():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  LOG_XOR -> LOG_NOT ("¿?" LOG_NOT)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores XOR aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores XOR aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_XOR ::= LOG_NOT ("¿?" LOG_NOT)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA y 
+* el subrol Constantes.OPL_XOR.
+*/
 Nodo LOG_XOR():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=LOG_NOT() 
@@ -730,13 +759,13 @@ Nodo LOG_XOR():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  LOG_NOT -> RELACIONAL
-          |  "!" LOG_NOT
-_____________________________________________________________
-Esta producción admite una única expresión o una negación 
-lógica del valor obtenido por una expresión.
------------------------------------------------------------*/
+/**
+* Esta producción admite una única expresión o una negación 
+* lógica del valor obtenido por una expresión.<br><br>
+* {@code LOG_NOT ::= RELACIONAL | "!" LOG_NOT}
+* @return Nodo directamente o con el rol Constantes.LOGICA_UNARIA y 
+* el subrol Constantes.OPL_NOT.
+*/
 Nodo LOG_NOT():{ Nodo nodo, extra; Token op; }
 {
   ( 
@@ -752,14 +781,15 @@ Nodo LOG_NOT():{ Nodo nodo, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  RELACIONAL -> ARITM (OP_REL ARITM)
-_____________________________________________________________
-Esta producción admite una única expresión aritmétcia, o una
-operación de índole relacional (comparativa) entre dos, y solo
-dos, expresiones aritméticas. El operador viene dado por la 
-producción OP_REL.
------------------------------------------------------------*/
+/**
+* Esta producción admite una única expresión aritmétcia, o una
+* operación de índole relacional (comparativa) entre dos, y solo
+* dos, expresiones aritméticas. El operador viene dado por la 
+* producción OP_REL.<br><br>
+* {@code RELACIONAL ::= ARITM (OP_REL ARITM)}
+* @return Nodo directamente o con el rol Constantes.RELACIONAL y 
+* el subrol del operador relacional.
+*/
 Nodo RELACIONAL():{ Extra op; Nodo nodo, temp, extra; }
 {
   nodo=ARITM() 
@@ -775,12 +805,12 @@ Nodo RELACIONAL():{ Extra op; Nodo nodo, temp, extra; }
 }
 
 
-/*-----------------------------------------------------------
-  OP_REL -> ("==" | "!=" | ">" | ">=" | "<" | "<=")
-_____________________________________________________________
-Producción que determina el operando a aplicar en una expresión
-de tipo relacional.
------------------------------------------------------------*/
+/**
+* Producción que determina el operando a aplicar en una expresión
+* de tipo relacional.<br><br>
+* {@code OP_REL ::= ("==" | "!=" | ">" | ">=" | "<" | "<=")}
+* @return Extra con el token y el operador (entero) detectado.
+*/
 Extra OP_REL():{ int op; Token tok; Extra extra; }
 {
   ( 
@@ -800,13 +830,14 @@ Extra OP_REL():{ int op; Token tok; Extra extra; }
 }
 
 
-/*-----------------------------------------------------------
-  ARTIM -> TERM ("+" TERM | "-" TERM)*
-_____________________________________________________________
-Esta producción admite un único término, o una seguidilla de 
-términos aplicando cualesquiera de los operandos (+, -) entre
-ellos.
------------------------------------------------------------*/
+/**
+* Esta producción admite un único término, o una seguidilla de 
+* términos aplicando cualesquiera de los operandos (+, -) entre
+* ellos.<br><br>
+* {@code ARTIM ::= TERM ("+" TERM | "-" TERM)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA 
+* y el subrol del operador según corresponda el símbolo.
+*/
 Nodo ARITM():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=TERM()
@@ -829,13 +860,14 @@ Nodo ARITM():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  TERM -> FACT ("*" FACT | "/" FACT | "%" FACT)*
-_____________________________________________________________
-Esta producción admite un único factor, o una seguidilla de 
-factores aplicando cualesquiera de los operandos (*, /, %) 
-entre ellos.
------------------------------------------------------------*/
+/**
+* Esta producción admite un único factor, o una seguidilla de 
+* factores aplicando cualesquiera de los operandos (*, /, %) 
+* entre ellos.<br><br>
+* {@code TERM ::= FACT ("*" FACT | "/" FACT | "%" FACT)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA 
+* y el subrol del operador según corresponda el operando.
+*/
 Nodo TERM():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=FACT()
@@ -865,12 +897,13 @@ Nodo TERM():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-  FACT -> VAL ("^" VAL)*
-_____________________________________________________________
-Esta producción admite un único valor, o una seguidilla de 
-valores aplicando el operando ^ entre ellos.
------------------------------------------------------------*/
+/**
+* Esta producción admite un único valor, o una seguidilla de 
+* valores aplicando el operando ^ entre ellos.<br><br>
+* {@code FACT ::= VAL ("^" VAL)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA
+* y el subrol del operador según corresponda el símbolo.
+*/
 Nodo FACT():{ Nodo nodo, temp, extra; Token op; }
 {
   nodo=VAL()
@@ -886,17 +919,20 @@ Nodo FACT():{ Nodo nodo, temp, extra; Token op; }
 }
 
 
-/*-----------------------------------------------------------
-   VAL -> "(" EXP ")"
-        | "-" VAL
-        | id [ "(" [ EXP ("," EXP)* ] ")" ]
-        | NATIVO
-_____________________________________________________________
-Esta producción puede reconocer la agrupación de expresiones por
-medio de paréntesis; o un menos unario aplicado a un valor; o un 
-acceso a una variable; o una llamada a un método (con 0 o más 
-valores en sus parámetros); o un dato nativo.
------------------------------------------------------------*/
+/**
+* Esta producción puede reconocer la agrupación de expresiones por
+* medio de paréntesis; o un menos unario aplicado a un valor; o un 
+* acceso a una variable; o una llamada a un método (con 0 o más 
+* valores en sus parámetros); o un dato nativo.<br><br>
+* <pre>
+*    VAL ::= "(" EXP ")"
+*         | "-" VAL
+*         | id [ "(" [ EXP ("," EXP)* ] ")" ]
+*         | NATIVO
+* </pre>
+* @return Nodo directamente o con rol Constantes.ARITMETICA_UNITARIA
+* o Constantes.VARIABLE o Constantes.LLAMADA.
+*/
 Nodo VAL():{ Nodo nodo, temp; Token token, aux; }
 {
   (
@@ -923,15 +959,13 @@ Nodo VAL():{ Nodo nodo, temp; Token token, aux; }
 }
 
 
-/*-----------------------------------------------------------
-NATIVO -> numero
-        | cadena
-        | true
-        | false
-_____________________________________________________________
-Esta producción reconoce los datos básicos del lenguaje, un 
-número, una cadena o un booleano en sus dos posibles valores.
------------------------------------------------------------*/
+/**
+* Esta producción reconoce los datos básicos del lenguaje, un 
+* número, una cadena o un booleano en sus dos posibles valores.<br><br>
+* {@code NATIVO ::= numero | cadena | true | false}
+* @return Nodo con rol Constantes.NUMERO o Constantes.CADENA
+* o Constantes.TRUE o Constantes.FALSE.
+*/
 Nodo NATIVO():{ Nodo nodo; Token tok; }
 {
   ( 
@@ -954,9 +988,12 @@ Nodo NATIVO():{ Nodo nodo; Token tok; }
 }
   
 
-//--------------------------------------
-//     Definición de reglas léxicas
-//--------------------------------------
+/**
+*  DEFINICIÓN DE REGLAS LÉXICAS
+* ____________________________________________________________
+*  Se definen los tokens por medio de expresiones léxicas, 
+*  asignandole un nombre a cada una.
+*/
 TOKEN:{
     < PYC : ";" >
   | < T_NUM : "Num" >
@@ -983,15 +1020,19 @@ TOKEN:{
 }
 
 
-//--------------------------------------
-//           Tokens ignorados
-//--------------------------------------
+/**
+*  TOKENS IGNORADOS
+* ____________________________________________________________
+*  Tokens ignorados durante el análisis léxico.
+*/
 SKIP: { " " | "\n" | "\t" | "\r" }
 
 
-//--------------------------------------
-//       Definición de comentarios
-//--------------------------------------
+/**
+*  DEFINICIÓN DE COMENTARIOS
+* ____________________________________________________________
+*  Se definen los comentarios, de una o varias líneas.
+*/
 MORE :
 {
   "//" : IN_SINGLE_LINE_COMMENT

@@ -2,7 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -16,7 +16,7 @@ public class ExpresionRelacional extends ExpresionAbstracta {
     }
 
     @Override
-    public Resultado resolver(Ambito ctx) {
+    public Resultado resolver(Contexto ctx) {
         Resultado resIzq = new Expresion(izq).resolver(ctx);
         Resultado resDer = new Expresion(der).resolver(ctx);
         int tipoIzq = resIzq.getTipo();
@@ -30,7 +30,7 @@ public class ExpresionRelacional extends ExpresionAbstracta {
         return new Resultado();
     }
     
-    private Resultado resolverNumeros(Resultado resIzq, Resultado resDer, Ambito ctx){
+    private Resultado resolverNumeros(Resultado resIzq, Resultado resDer, Contexto ctx){
         double dblIzq = Double.parseDouble(resIzq.getValor());
         double dblDer = Double.parseDouble(resDer.getValor());
         boolean res = false;
@@ -57,7 +57,7 @@ public class ExpresionRelacional extends ExpresionAbstracta {
         return Resultado.creaBooleano(convertirBooleano(res));
     }
 
-    private Resultado resolverCadenas(Resultado resIzq, Resultado resDer, Ambito ctx){
+    private Resultado resolverCadenas(Resultado resIzq, Resultado resDer, Contexto ctx){
         int comparacion = resIzq.getValor().compareTo(resDer.getValor());
         boolean res = false;
         switch(operando){

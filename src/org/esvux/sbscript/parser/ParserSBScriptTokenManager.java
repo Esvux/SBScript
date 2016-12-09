@@ -7,7 +7,7 @@ import org.esvux.sbscript.ast.Programa;
 import org.esvux.sbscript.ast.FabricaAST;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.interprete.expresiones.Expresion;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 
 /** Token Manager. */
 public class ParserSBScriptTokenManager implements ParserSBScriptConstants

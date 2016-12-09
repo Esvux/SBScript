@@ -35,6 +35,10 @@ public class Programa {
         }
     }
 
+    public List<Nodo> getVariables() {
+        return variables;
+    }
+
     public void addVariables(Nodo declaracion) {
         variables.add(declaracion);
     }

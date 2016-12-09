@@ -1,7 +1,7 @@
 package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 import org.esvux.sbscript.interprete.Variable;
 
@@ -13,29 +13,31 @@ public abstract class InstruccionAbstracta {
 
     protected Nodo instruccion;
     protected boolean permiteInter;
-    protected static Ambito ambitoGlobal;
+    protected static Contexto contextoGlobal = new Contexto();
 
     InstruccionAbstracta(Nodo instruccion, boolean permiteInter) {
         this.instruccion = instruccion;
         this.permiteInter = permiteInter;
     }
 
-    public static Variable buscarVariable(Ambito ambito, String nombre) {
+    public static Variable obtenerVariable(Contexto ambito, String nombre) {
         Variable var = ambito.getVariable(nombre);
         if (var != null) {
             return var;
         }
-        var = InstruccionAbstracta.ambitoGlobal.getVariable(nombre);
-        if (var == null) {
-            //Error, variable inexistente
-        }
+        var = contextoGlobal.getVariable(nombre);
         return var;
     }
 
-    public static void setAmbitoGlobal(Ambito ambito) {
-        ambitoGlobal = ambito;
+    public static void setContextoGlobal() {
+        contextoGlobal = new Contexto();
+    }
+    
+    public static Contexto getContextoGlobal() {
+        return contextoGlobal;
     }
 
-    public abstract Resultado ejecutar(Ambito ctx, int nivel);
+
+    public abstract Resultado ejecutar(Contexto ctx, int nivel);
 
 }

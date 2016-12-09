@@ -2,7 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -20,14 +20,14 @@ public class ExpresionLogica extends ExpresionAbstracta {
     }
 
     @Override
-    public Resultado resolver(Ambito ctx) {
+    public Resultado resolver(Contexto ctx) {
         if (der == null) {
             return resolverUnaria(ctx);
         }
         return resolverBinaria(ctx);
     }
 
-    private Resultado resolverBinaria(Ambito ctx) {
+    private Resultado resolverBinaria(Contexto ctx) {
         Resultado resIzq = new Expresion(izq).resolver(ctx);
         Resultado resDer = new Expresion(der).resolver(ctx);
         int tipoIzq = resIzq.getTipo();
@@ -53,7 +53,7 @@ public class ExpresionLogica extends ExpresionAbstracta {
         return Resultado.creaBooleano(convertirBooleano(blnIzq));
     }
 
-    private Resultado resolverUnaria(Ambito ctx) {
+    private Resultado resolverUnaria(Contexto ctx) {
         Resultado resIzq = new Expresion(izq).resolver(ctx);
         if (resIzq.getTipo() != Constantes.T_BOOL) {
             return new Resultado();

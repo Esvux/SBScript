@@ -8,2016 +8,1725 @@ import org.esvux.sbscript.ast.Programa;
 import org.esvux.sbscript.ast.FabricaAST;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.interprete.expresiones.Expresion;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 
 /**
- * Clase principal para el análisis (parseo) de la cadena de entrada para
- * SBScript. Para utilizar esta clase se debe cargar la cadena por medio de un
- * StringReader y luego, para realizar el análisis, sobre la instancia creada se
- * debe llamar al método PROGRAMA().
- *
- * @author esvux
- */
+* Clase principal para el análisis (parseo) de la cadena de entrada
+* para SBScript. Para utilizar esta clase se debe cargar la cadena
+* por medio de un StringReader y luego, para realizar el análisis,
+* sobre la instancia creada se debe llamar al método PROGRAMA().
+* @author esvux
+*/
 public class ParserSBScript implements ParserSBScriptConstants {
 
-    private Errores err = Errores.getInstance();
+  private Errores err = Errores.getInstance();
 
-    private void reportarError(int fila, int columna, String descError) {
-        err.nuevoErrorSintactico(fila, columna, descError);
-        System.err.println(descError);
-    }
+  private void reportarError(int fila, int columna, String descError){
+    err.nuevoErrorSintactico(fila, columna, descError);
+    System.err.println(descError);
+  }
 
-    public static void main(String args[]) throws ParseException {
-        ParserSBScript parser = new ParserSBScript(
-                new java.io.StringReader("Num a = -400 ^ 0.5;")
-        );
-        parser.PROGRAMA();
-        System.out.println("An\u00e1lisis concluido!!");
-    }
+  public static void main(String args[]) throws ParseException {
+    ParserSBScript parser = new ParserSBScript(
+      new java.io.StringReader("Num a,b,c;")
+    );
+    parser.PROGRAMA();
+    System.out.println("An\u00e1lisis concluido!!");
+  }
 
-    /*-----------------------------------------------------------
-  PROGRAMA -> ( PRINCIPAL | METODO | DEC_GLOBAL )+
-_____________________________________________________________
-Producción de inicio que se encarga de listar el método principal
-las variables globales y los métodos. En esta producción se usó
-un LOOKAHEAD, que determina el número de caracteres de anticipo
-para realizar el análisis sintáctico (3 para diferenciar entre
-una definición de método y una declaración de variables). Toda
-esta información se almacena en un objeto programa.
------------------------------------------------------------*/
-    final public Programa PROGRAMA() throws ParseException {
-        Programa pro = new Programa();
-        Metodo met;
-        Nodo dec;
-        label_1:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case PR_PRINCIPAL:
-                    met = PRINCIPAL();
-                    pro.setPrincipal(met);
-                    break;
-                default:
-                    jj_la1[0] = jj_gen;
-                    if (jj_2_1(3)) {
-                        met = METODO();
-                        pro.addMetodo(met);
-                    } else {
-                        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                            case T_NUM:
-                            case T_STR:
-                            case T_BOOL:
-                                dec = DEC_GLOBAL();
-                                pro.addVariables(dec);
-                                break;
-                            default:
-                                jj_la1[1] = jj_gen;
-                                jj_consume_token(-1);
-                                throw new ParseException();
-                        }
-                    }
-            }
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case T_NUM:
-                case T_STR:
-                case T_BOOL:
-                case T_VOID:
-                case PR_PRINCIPAL:
+/**
+* Producción de inicio que se encarga de listar el método principal
+* las variables globales y los métodos. En esta producción se usó
+* un LOOKAHEAD, que determina el número de caracteres de anticipo
+* para realizar el análisis sintáctico (3 para diferenciar entre
+* una definición de método y una declaración de variables). Toda
+* esta información se almacena en un objeto programa.<br><br>
+* {@code PROGRAMA ::= ( PRINCIPAL | METODO | DEC_GLOBAL )+ }
+* @return Objeto programa con toda la información de SBScript.
+*/
+  final public Programa PROGRAMA() throws ParseException {
+                      Programa pro = new Programa(); Metodo met; Nodo dec;
+    label_1:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case PR_PRINCIPAL:
+        met = PRINCIPAL();
+      pro.setPrincipal(met);
+        break;
+      default:
+        jj_la1[0] = jj_gen;
+        if (jj_2_1(3)) {
+          met = METODO();
+      pro.addMetodo(met);
+        } else {
+          switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+          case T_NUM:
+          case T_STR:
+          case T_BOOL:
+            dec = DEC_GLOBAL();
+      pro.addVariables(dec);
+            break;
+          default:
+            jj_la1[1] = jj_gen;
+            jj_consume_token(-1);
+            throw new ParseException();
+          }
+        }
+      }
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case T_NUM:
+      case T_STR:
+      case T_BOOL:
+      case T_VOID:
+      case PR_PRINCIPAL:
         ;
-                    break;
-                default:
-                    jj_la1[2] = jj_gen;
-                    break label_1;
-            }
-        }
-        {
-            if (true) {
-                return pro;
-            }
-        }
-        throw new Error("Missing return statement in function");
+        break;
+      default:
+        jj_la1[2] = jj_gen;
+        break label_1;
+      }
     }
+    {if (true) return pro;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  PRINCIPAL -> "Principal" "(" ")" CUERPO
-_____________________________________________________________
-Esta producción reconoce un método principal y crea un objeto
-método (al que se le agrega el nodo cuerpo).
------------------------------------------------------------*/
-    final public Metodo PRINCIPAL() throws ParseException {
-        Nodo cuerpo;
-        jj_consume_token(PR_PRINCIPAL);
-        jj_consume_token(1);
-        jj_consume_token(2);
-        cuerpo = CUERPO();
-        Metodo principal = FabricaAST.creaPrincipal();
-        principal.setCuerpo(cuerpo);
-        {
-            if (true) {
-                return principal;
-            }
-        }
-        throw new Error("Missing return statement in function");
+/**
+* Esta producción reconoce un método principal y crea un objeto
+* método (al que se le agrega el nodo cuerpo).<br><br>
+* {@code PRINCIPAL ::= "Principal" "(" ")" CUERPO }
+* @return Objeto metodo principal.
+*/
+  final public Metodo PRINCIPAL() throws ParseException {
+                     Nodo cuerpo;
+    jj_consume_token(PR_PRINCIPAL);
+    jj_consume_token(1);
+    jj_consume_token(2);
+    cuerpo = CUERPO();
+    Metodo principal = FabricaAST.creaPrincipal();
+    principal.setCuerpo(cuerpo);
+    {if (true) return principal;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción determina los tipos de dato permitidos para la
+* declaración de métodos y retorna un entero que representa el
+* tipo de dato reconocido. <br><br>
+* {@code TIPO_MET ::= "Void" | "Num" | "Str" | "Bool" }
+* @return Entero que representa el tipo reconocido (incluido el tipo Void).
+*/
+  final public int TIPO_MET() throws ParseException {
+                 int tipo;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case T_NUM:
+      jj_consume_token(T_NUM);
+      tipo = Constantes.T_NUM;
+      break;
+    case T_STR:
+      jj_consume_token(T_STR);
+      tipo = Constantes.T_STR;
+      break;
+    case T_BOOL:
+      jj_consume_token(T_BOOL);
+      tipo = Constantes.T_BOOL;
+      break;
+    case T_VOID:
+      jj_consume_token(T_VOID);
+      tipo = Constantes.T_VOID;
+      break;
+    default:
+      jj_la1[3] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
     }
+    {if (true) return tipo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  TIPO_MET -> "Void"
-           |  "Num"
-           |  "Str"
-           |  "Bool"
-_____________________________________________________________
-Esta producción determina los tipos de dato permitidos para la
-declaración de métodos y retorna un entero que representa el
-tipo de dato reconocido.
------------------------------------------------------------*/
-    final public int TIPO_MET() throws ParseException {
-        int tipo;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case T_NUM:
-                jj_consume_token(T_NUM);
-                tipo = Constantes.T_NUM;
-                break;
-            case T_STR:
-                jj_consume_token(T_STR);
-                tipo = Constantes.T_STR;
-                break;
-            case T_BOOL:
-                jj_consume_token(T_BOOL);
-                tipo = Constantes.T_BOOL;
-                break;
-            case T_VOID:
-                jj_consume_token(T_VOID);
-                tipo = Constantes.T_VOID;
-                break;
-            default:
-                jj_la1[3] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        {
-            if (true) {
-                return tipo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  METODO -> TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO
-_____________________________________________________________
-Esta producción reconoce un método y crea un objeto método con un
-tipo y un nombre específico, además de agregar al objeto creado,
-los parámetros que acompañan la definición del método, finalmente
-se le agrega el nodo cuerpo.
------------------------------------------------------------*/
-    final public Metodo METODO() throws ParseException {
-        Nodo cuerpo;
-        Token id;
-        int tipo;
-        Metodo metodo;
-        tipo = TIPO_MET();
-        id = jj_consume_token(ID);
-        metodo = FabricaAST.creaMetodo(id.image, tipo);
-        jj_consume_token(1);
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case T_NUM:
-            case T_STR:
-            case T_BOOL:
-                tipo = TIPO_VAR();
-                id = jj_consume_token(ID);
-                metodo.addParam(FabricaAST.creaParametro(id.image, tipo));
-                label_2:
-                while (true) {
-                    switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                        case 3:
+/**
+* Esta producción reconoce un método y crea un objeto método con un
+* tipo y un nombre específico, además de agregar al objeto creado,
+* los parámetros que acompañan la definición del método, finalmente
+* se le agrega el nodo cuerpo.<br><br>
+* {@code METODO ::= TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO}
+* @return Objeto método, con nombre y cuerpo propio.
+*/
+  final public Metodo METODO() throws ParseException {
+                  Nodo cuerpo; Token id; int tipo; Metodo metodo;
+    tipo = TIPO_MET();
+    id = jj_consume_token(ID);
+    metodo = FabricaAST.creaMetodo(id.image, tipo);
+    jj_consume_token(1);
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case T_NUM:
+    case T_STR:
+    case T_BOOL:
+      tipo = TIPO_VAR();
+      id = jj_consume_token(ID);
+    metodo.addParam(FabricaAST.creaParametro(id.image, tipo));
+      label_2:
+      while (true) {
+        switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+        case 3:
           ;
-                            break;
-                        default:
-                            jj_la1[4] = jj_gen;
-                            break label_2;
-                    }
-                    jj_consume_token(3);
-                    tipo = TIPO_VAR();
-                    id = jj_consume_token(ID);
-                    metodo.addParam(FabricaAST.creaParametro(id.image, tipo));
-                }
-                break;
-            default:
-                jj_la1[5] = jj_gen;
-                ;
+          break;
+        default:
+          jj_la1[4] = jj_gen;
+          break label_2;
         }
-        jj_consume_token(2);
-        cuerpo = CUERPO();
-        metodo.setCuerpo(cuerpo);
-        {
-            if (true) {
-                return metodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  TIPO_VAR -> "Num"
-           |  "Str"
-           |  "Bool"
-_____________________________________________________________
-Esta producción determina los tipos de datos permitidos para la
-declaración de variables y retorna un entero que representa el
-tipo de dato reconocido.
------------------------------------------------------------*/
-    final public int TIPO_VAR() throws ParseException {
-        int tipo;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case T_NUM:
-                jj_consume_token(T_NUM);
-                tipo = Constantes.T_NUM;
-                break;
-            case T_STR:
-                jj_consume_token(T_STR);
-                tipo = Constantes.T_STR;
-                break;
-            case T_BOOL:
-                jj_consume_token(T_BOOL);
-                tipo = Constantes.T_BOOL;
-                break;
-            default:
-                jj_la1[6] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        {
-            if (true) {
-                return tipo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  DEC_GLOBAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
-una lista adicional de strings para almacenar los id's y existe
-un nodo opcional para la expresión de la posible asignación).
-             _____________
-            | DEC_GLOBAL  |
-            |_____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo DEC_GLOBAL() throws ParseException {
-        Nodo nodo, exp;
-        int tipo;
-        Token id;
+        jj_consume_token(3);
         tipo = TIPO_VAR();
         id = jj_consume_token(ID);
-        nodo = FabricaAST.creaDeclaracion(tipo, id.image);
-        label_3:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 3:
+      metodo.addParam(FabricaAST.creaParametro(id.image, tipo));
+      }
+      break;
+    default:
+      jj_la1[5] = jj_gen;
+      ;
+    }
+    jj_consume_token(2);
+    cuerpo = CUERPO();
+    metodo.setCuerpo(cuerpo);
+    {if (true) return metodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción determina los tipos de datos permitidos para la
+* declaración de variables y retorna un entero que representa el
+* tipo de dato reconocido.<br><br>
+* {@code TIPO_VAR ::= "Num" | "Str" | "Bool"}
+* @return Entero que representa el tipo reconocido.
+*/
+  final public int TIPO_VAR() throws ParseException {
+                 int tipo;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case T_NUM:
+      jj_consume_token(T_NUM);
+      tipo = Constantes.T_NUM;
+      break;
+    case T_STR:
+      jj_consume_token(T_STR);
+      tipo = Constantes.T_STR;
+      break;
+    case T_BOOL:
+      jj_consume_token(T_BOOL);
+      tipo = Constantes.T_BOOL;
+      break;
+    default:
+      jj_la1[6] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    {if (true) return tipo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* DEC_GLOBAL y crea la siguiente estructura para el AST (se utiliza
+* una lista adicional de strings para almacenar los id's y existe
+* un nodo opcional para la expresión de la posible asignación).<br><br>
+* {@code DEC_GLOBAL ::= TIPO_VAR id ("," id) [ "=" EXP ] ";"}
+* <pre>
+*             _____________
+*            | DEC_GLOBAL  |
+*            |_____________|
+*               |     _____________
+*              (0)---| EXPRESION   |
+*                    |_____________|
+* </pre>
+* @return Nodo con rol Constantes.DECLARACION.
+*/
+  final public Nodo DEC_GLOBAL() throws ParseException {
+                    Nodo nodo, exp; int tipo; Token id;
+    tipo = TIPO_VAR();
+    id = jj_consume_token(ID);
+    nodo = FabricaAST.creaDeclaracion(tipo, id.image);
+    label_3:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 3:
         ;
-                    break;
-                default:
-                    jj_la1[7] = jj_gen;
-                    break label_3;
-            }
-            jj_consume_token(3);
-            id = jj_consume_token(ID);
-            nodo.addAux(id.image);
-        }
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 4:
-                jj_consume_token(4);
-                exp = EXP();
-                nodo.addHijo(exp);
-                break;
-            default:
-                jj_la1[8] = jj_gen;
-                ;
-        }
-        jj_consume_token(PYC);
-        nodo.setUbicacion(id);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+        break;
+      default:
+        jj_la1[7] = jj_gen;
+        break label_3;
+      }
+      jj_consume_token(3);
+      id = jj_consume_token(ID);
+      nodo.addAux(id.image);
     }
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 4:
+      jj_consume_token(4);
+      exp = EXP();
+      nodo.addHijo(exp);
+      break;
+    default:
+      jj_la1[8] = jj_gen;
+      ;
+    }
+    jj_consume_token(PYC);
+    nodo.setUbicacion(id);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  CUERPO -> "{" ( INSTRUCCION )* "}"
-_____________________________________________________________
-Esta producción agrupa las instrucciones, delimitadas por un 
-juego de llaves, en un nodo de tipo CUERPO.
-             ____________
-            | CUERPO     |
-            |____________|
-               |     ________________
-              (0)---| INSTRUCCION 1  |
-               |    |________________|
-              (1)---| INSTRUCCION 2  |
-               |    |________________|
-               |         . . .
-               |     ________________
-              (n)---| INSTRUCCION n  |
-                    |________________|
------------------------------------------------------------*/
-    final public Nodo CUERPO() throws ParseException {
-        Nodo nodo = FabricaAST.creaCuerpo();
-        Nodo instruccion;
-        jj_consume_token(5);
-        label_4:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case T_NUM:
-                case T_STR:
-                case T_BOOL:
-                case PR_MOSTRAR:
-                case PR_RETORNO:
-                case PR_SI:
-                case PR_SELECCIONA:
-                case PR_MIENTRAS:
-                case PR_DETENER:
-                case PR_CONTINUAR:
-                case PR_PARA:
-                case ID:
+/**
+* Esta producción agrupa las instrucciones, delimitadas por un 
+* juego de llaves, en un nodo de tipo CUERPO.<br><br>
+* {@code CUERPO ::= "{" ( INSTRUCCION )* "}" }
+* <pre>
+*              ____________
+*             | CUERPO     |
+*             |____________|
+*                |     ________________
+*               (0)---| INSTRUCCION 1  |
+*                |    |________________|
+*               (1)---| INSTRUCCION 2  |
+*                |    |________________|
+*                |         . . .
+*                |     ________________
+*               (n)---| INSTRUCCION n  |
+*                     |________________|
+* </pre>
+* @return Nodo con rol Constantes.CUERPO.
+*/
+  final public Nodo CUERPO() throws ParseException {
+                Nodo nodo = FabricaAST.creaCuerpo(); Nodo instruccion;
+    jj_consume_token(5);
+    label_4:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case T_NUM:
+      case T_STR:
+      case T_BOOL:
+      case PR_MOSTRAR:
+      case PR_RETORNO:
+      case PR_SI:
+      case PR_SELECCIONA:
+      case PR_MIENTRAS:
+      case PR_DETENER:
+      case PR_CONTINUAR:
+      case PR_PARA:
+      case ID:
         ;
-                    break;
-                default:
-                    jj_la1[9] = jj_gen;
-                    break label_4;
-            }
-            instruccion = INSTRUCCION();
-            nodo.addHijo(instruccion);
-        }
-        jj_consume_token(6);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+        break;
+      default:
+        jj_la1[9] = jj_gen;
+        break label_4;
+      }
+      instruccion = INSTRUCCION();
+                                    nodo.addHijo(instruccion);
     }
+    jj_consume_token(6);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  INSTRUCCION -> ASIGNACION
-              |  LLAMADA
-              |  DEC_LOCAL
-              |  RETORNO
-              |  MOSTRAR
-              |  SI
-              |  SELECCIONA
-              |  MIENTRAS
-              |  PARA
-              |  DETENER
-              |  CONTINUAR
-_____________________________________________________________
-Esta producción es una producción de transición que concentra 
-todas las instrucciones posibles e incorpora la recuperación de
-errores sintácticos, en lo que concierne al AST retorna el nodo
-asociado a cada instrucción o un nodo en blanco si se presenta
-algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
-ID cuando lo que espera es una llamada o una asignación.
------------------------------------------------------------*/
-    final public Nodo INSTRUCCION() throws ParseException {
-        Nodo nodo = new Nodo();
-        try {
-            if (jj_2_2(2)) {
-                nodo = ASIGNACION();
-            } else {
-                switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                    case ID:
-                        nodo = LLAMADA();
-                        break;
-                    case T_NUM:
-                    case T_STR:
-                    case T_BOOL:
-                        nodo = DEC_LOCAL();
-                        break;
-                    case PR_RETORNO:
-                        nodo = RETORNO();
-                        break;
-                    case PR_MOSTRAR:
-                        nodo = MOSTRAR();
-                        break;
-                    case PR_SI:
-                        nodo = SI();
-                        break;
-                    case PR_SELECCIONA:
-                        nodo = SELECCIONA();
-                        break;
-                    case PR_MIENTRAS:
-                        nodo = MIENTRAS();
-                        break;
-                    case PR_PARA:
-                        nodo = PARA();
-                        break;
-                    case PR_DETENER:
-                        nodo = DETENER();
-                        break;
-                    case PR_CONTINUAR:
-                        nodo = CONTINUAR();
-                        break;
-                    default:
-                        jj_la1[10] = jj_gen;
-                        jj_consume_token(-1);
-                        throw new ParseException();
-                }
-            }
-        } catch (ParseException e) {
-            Token t;
-            do {
-                t = getNextToken();
-            } while (t.kind != PYC);
-            reportarError(t.beginLine, t.beginColumn, e.getMessage());
+/**
+* Esta producción es una producción de transición que concentra 
+* todas las instrucciones posibles e incorpora la recuperación de
+* errores sintácticos, en lo que concierne al AST retorna el nodo
+* asociado a cada instrucción o un nodo en blanco si se presenta
+* algún error. Se utilizó un LOOKAHEAD de 2, para diferenciar el
+* ID cuando lo que espera es una llamada o una asignación.<br><br>
+* <pre>
+* INSTRUCCION ::= ASIGNACION
+*              |  LLAMADA
+*              |  DEC_LOCAL
+*              |  RETORNO
+*              |  MOSTRAR
+*              |  SI
+*              |  SELECCIONA
+*              |  MIENTRAS
+*              |  PARA
+*              |  DETENER
+*              |  CONTINUAR
+* </pre>
+* @return Nodo con el rol de la instrucción detectada.
+*/
+  final public Nodo INSTRUCCION() throws ParseException {
+                     Nodo nodo = new Nodo();
+    try {
+      if (jj_2_2(2)) {
+        nodo = ASIGNACION();
+      } else {
+        switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+        case ID:
+          nodo = LLAMADA();
+          break;
+        case T_NUM:
+        case T_STR:
+        case T_BOOL:
+          nodo = DEC_LOCAL();
+          break;
+        case PR_RETORNO:
+          nodo = RETORNO();
+          break;
+        case PR_MOSTRAR:
+          nodo = MOSTRAR();
+          break;
+        case PR_SI:
+          nodo = SI();
+          break;
+        case PR_SELECCIONA:
+          nodo = SELECCIONA();
+          break;
+        case PR_MIENTRAS:
+          nodo = MIENTRAS();
+          break;
+        case PR_PARA:
+          nodo = PARA();
+          break;
+        case PR_DETENER:
+          nodo = DETENER();
+          break;
+        case PR_CONTINUAR:
+          nodo = CONTINUAR();
+          break;
+        default:
+          jj_la1[10] = jj_gen;
+          jj_consume_token(-1);
+          throw new ParseException();
         }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+      }
+    } catch (ParseException e) {
+    Token t;
+    do {
+      t = getNextToken();
+    } while (t.kind != PYC);
+    reportarError(t.beginLine, t.beginColumn, e.getMessage());
     }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  DEC_LOCAL -> TIPO_VAR id ("," id) [ "=" EXP ] ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
-una lista adicional de strings para almacenar los id's y existe
-un nodo opcional para la expresión de la posible asignación).
-             ____________
-            | DEC_LOCAL  |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo DEC_LOCAL() throws ParseException {
-        Nodo nodo, exp;
-        int tipo;
-        Token id;
-        tipo = TIPO_VAR();
-        id = jj_consume_token(ID);
-        nodo = FabricaAST.creaDeclaracion(tipo, id.image);
-        label_5:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 3:
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* DEC_LOCAL y crea la siguiente estructura para el AST (se utiliza
+* una lista adicional de strings para almacenar los id's y existe
+* un nodo opcional para la expresión de la posible asignación).<br><br>
+* {@code DEC_LOCAL ::= TIPO_VAR id ("," id) [ "=" EXP ] ";"}
+* <pre>
+*             ____________
+*            | DEC_LOCAL  |
+*            |____________|
+*               |     _____________
+*              (0)---| EXPRESION   |
+*                    |_____________|
+* </pre>
+* @return Nodo con rol Constantes.DECLARACION.
+*/
+  final public Nodo DEC_LOCAL() throws ParseException {
+                   Nodo nodo, exp; int tipo; Token id;
+    tipo = TIPO_VAR();
+    id = jj_consume_token(ID);
+    nodo = FabricaAST.creaDeclaracion(tipo, id.image);
+    label_5:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 3:
         ;
-                    break;
-                default:
-                    jj_la1[11] = jj_gen;
-                    break label_5;
-            }
-            jj_consume_token(3);
-            id = jj_consume_token(ID);
-            nodo.addAux(id.image);
-        }
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 4:
-                jj_consume_token(4);
-                exp = EXP();
-                nodo.addHijo(exp);
-                break;
-            default:
-                jj_la1[12] = jj_gen;
-                ;
-        }
-        jj_consume_token(PYC);
-        nodo.setUbicacion(id);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+        break;
+      default:
+        jj_la1[11] = jj_gen;
+        break label_5;
+      }
+      jj_consume_token(3);
+      id = jj_consume_token(ID);
+                  nodo.addAux(id.image);
     }
-
-    /*-----------------------------------------------------------
-  ASIGNACION -> id "=" EXP ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
-principal, el atributo cadena guardará el valor del ID asociado 
-a la asignación).
-             ____________
-            | ASIGNACION |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo ASIGNACION() throws ParseException {
-        Nodo exp;
-        Token id;
-        id = jj_consume_token(ID);
-        jj_consume_token(4);
-        exp = EXP();
-        jj_consume_token(PYC);
-        Nodo nodo = FabricaAST.creaAsignacion(id.image, exp);
-        nodo.setUbicacion(id);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  LLAMADA -> id "(" [ EXP ("," EXP)* ] ")" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de tipo
-LLAMADA y crea la siguiente estructura para el AST (en el nodo 
-principal, el atributo cadena guardará el valor del ID asociado 
-a la llamada, mientras los nodos hijo serán los valores para los
-parámetros).
-             ____________
-            | LLAMADA    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| EXPRESION   |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo LLAMADA() throws ParseException {
-        Nodo nodo, exp;
-        Token id;
-        id = jj_consume_token(ID);
-        jj_consume_token(1);
-        nodo = FabricaAST.creaLlamada(id.image);
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 1:
-            case 11:
-            case 19:
-            case TRUE:
-            case FALSE:
-            case NUMERO:
-            case CADENA:
-            case ID:
-                exp = EXP();
-                nodo.addHijo(exp);
-                label_6:
-                while (true) {
-                    switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                        case 3:
-          ;
-                            break;
-                        default:
-                            jj_la1[13] = jj_gen;
-                            break label_6;
-                    }
-                    jj_consume_token(3);
-                    exp = EXP();
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 4:
+      jj_consume_token(4);
+      exp = EXP();
                     nodo.addHijo(exp);
-                }
-                break;
-            default:
-                jj_la1[14] = jj_gen;
-                ;
-        }
-        jj_consume_token(2);
-        jj_consume_token(PYC);
-        nodo.setUbicacion(id);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+      break;
+    default:
+      jj_la1[12] = jj_gen;
+      ;
     }
+    jj_consume_token(PYC);
+    nodo.setUbicacion(id);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  RETORNO -> "Retorno" EXP ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo RETORNO y crea la siguiente estructura para el AST.
-             ____________
-            | RETORNO    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo RETORNO() throws ParseException {
-        Nodo exp;
-        Token aux;
-        aux = jj_consume_token(PR_RETORNO);
-        exp = EXP();
-        jj_consume_token(PYC);
-        Nodo nodo = FabricaAST.creaRetorno(exp);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* ASIGNACION y crea la siguiente estructura para el AST (en el nodo 
+* principal, el atributo cadena guardará el valor del ID asociado 
+* a la asignación).<br><br>
+* {@code ASIGNACION ::= id "=" EXP ";"}
+* <pre>
+*              ____________
+*             | ASIGNACION |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+*/
+  final public Nodo ASIGNACION() throws ParseException {
+                    Nodo exp; Token id;
+    id = jj_consume_token(ID);
+    jj_consume_token(4);
+    exp = EXP();
+    jj_consume_token(PYC);
+    Nodo nodo = FabricaAST.creaAsignacion(id.image, exp);
+    nodo.setUbicacion(id);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de tipo
+* LLAMADA y crea la siguiente estructura para el AST (en el nodo 
+* principal, el atributo cadena guardará el valor del ID asociado 
+* a la llamada, mientras los nodos hijo serán los valores para los
+* parámetros).<br><br>
+* {@code LLAMADA ::= id "(" [ EXP ("," EXP)* ] ")" ";"}
+* <pre>
+*              ____________
+*             | LLAMADA    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| EXPRESION   |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.LLAMADA.
+*/
+  final public Nodo LLAMADA() throws ParseException {
+                 Nodo nodo, exp; Token id;
+    id = jj_consume_token(ID);
+    jj_consume_token(1);
+                nodo = FabricaAST.creaLlamada(id.image);
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 1:
+    case 11:
+    case 19:
+    case TRUE:
+    case FALSE:
+    case NUMERO:
+    case CADENA:
+    case ID:
+      exp = EXP();
+                nodo.addHijo(exp);
+      label_6:
+      while (true) {
+        switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+        case 3:
+          ;
+          break;
+        default:
+          jj_la1[13] = jj_gen;
+          break label_6;
         }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  MOSTRAR -> "Mostrar" "(" EXP ("," EXP)* ")" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo MOSTRAR y crea la siguiente estructura para el AST.
-             ____________
-            | MOSTRAR    |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| EXPRESION   |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| EXPRESION   |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo MOSTRAR() throws ParseException {
-        Nodo nodo, exp;
-        Token aux;
-        aux = jj_consume_token(PR_MOSTRAR);
-        jj_consume_token(1);
+        jj_consume_token(3);
         exp = EXP();
-        nodo = FabricaAST.creaMostrar(exp);
-        label_7:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 3:
+                    nodo.addHijo(exp);
+      }
+      break;
+    default:
+      jj_la1[14] = jj_gen;
+      ;
+    }
+    jj_consume_token(2);
+    jj_consume_token(PYC);
+    nodo.setUbicacion(id);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo RETORNO y crea la siguiente estructura para el AST.<br><br>
+* {@code RETORNO ::= "Retorno" EXP ";"}
+* <pre>
+*              ____________
+*             | RETORNO    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.RETORNO.
+*/
+  final public Nodo RETORNO() throws ParseException {
+                 Nodo exp; Token aux;
+    aux = jj_consume_token(PR_RETORNO);
+    exp = EXP();
+    jj_consume_token(PYC);
+    Nodo nodo = FabricaAST.creaRetorno(exp);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo MOSTRAR y crea la siguiente estructura para el AST.<br><br>
+* {@code MOSTRAR ::= "Mostrar" "(" EXP ("," EXP)* ")" ";"}
+* <pre>
+*              ____________
+*             | MOSTRAR    |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| EXPRESION   |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| EXPRESION   |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.MOSTRAR.
+*/
+  final public Nodo MOSTRAR() throws ParseException {
+                 Nodo nodo, exp; Token aux;
+    aux = jj_consume_token(PR_MOSTRAR);
+    jj_consume_token(1);
+    exp = EXP();
+                                   nodo = FabricaAST.creaMostrar(exp);
+    label_7:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 3:
         ;
-                    break;
-                default:
-                    jj_la1[15] = jj_gen;
-                    break label_7;
+        break;
+      default:
+        jj_la1[15] = jj_gen;
+        break label_7;
+      }
+      jj_consume_token(3);
+      exp = EXP();
+                    nodo.addHijo(exp);
+    }
+    jj_consume_token(2);
+    jj_consume_token(PYC);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo SI y crea la siguiente estructura para el AST (el SINO es
+* opcional, por lo tanto su presencia en el AST también lo es).<br><br>
+* {@code SI ::= "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]}
+* <pre>
+*              __________
+*             | SI       |
+*             |__________|
+*                |     _______________
+*               (0)---| CONDICION     |
+*                |    |_______________|
+*               (1)---| CUERPO (SI)   |
+*                |    |_______________|
+*               (2)---| CUERPO (SINO) |
+*                     |_______________|
+* </pre>
+* @return Nodo con rol Constantes.SI.
+*/
+  final public Nodo SI() throws ParseException {
+            Nodo cond, si; Nodo sino = null; Token aux;
+    aux = jj_consume_token(PR_SI);
+    jj_consume_token(1);
+    cond = EXP();
+    jj_consume_token(2);
+    si = CUERPO();
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case PR_SINO:
+      jj_consume_token(PR_SINO);
+      sino = CUERPO();
+      break;
+    default:
+      jj_la1[16] = jj_gen;
+      ;
+    }
+    Nodo nodo = FabricaAST.creaSi(cond, si, sino);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo SELECCIONA y crea la siguiente estructura para el AST 
+* (con un mínimo de un caso establecido).<br><br>
+* {@code SELECCIONA ::= "Selecciona" "(" EXP ")" ( CASO )+}
+* <pre>
+*              ____________
+*             | SELECCIONA |
+*             |____________|
+*                |     _____________
+*               (0)---| EXPRESION   |
+*                |    |_____________|
+*               (1)---| CASO 1      |
+*                |    |_____________|
+*               (2)---| CASO 2      |
+*                |    |_____________|
+*                |         . . .
+*                |     _____________
+*               (n)---| CASO n      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.SELECCIONA.
+*/
+  final public Nodo SELECCIONA() throws ParseException {
+                    Nodo nodo, exp, caso; Token aux;
+    aux = jj_consume_token(PR_SELECCIONA);
+    jj_consume_token(1);
+    exp = EXP();
+    jj_consume_token(2);
+                                          nodo = FabricaAST.creaSelecciona(exp);
+    label_8:
+    while (true) {
+      caso = CASO();
+                  nodo.addHijo(caso);
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case TRUE:
+      case FALSE:
+      case NUMERO:
+      case CADENA:
+        ;
+        break;
+      default:
+        jj_la1[17] = jj_gen;
+        break label_8;
+      }
+    }
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de un caso, cada caso está
+* compuesto por un valor nativo y un cuerpo de instrucciones.<br><br>
+* {@code CASO ::= NATIVO ":" CUERPO}
+* <pre>
+*              __________
+*             | CASO     |
+*             |__________|
+*                |     _____________
+*               (0)---| NATIVO      |
+*                |    |_____________|
+*               (1)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.CASO.
+*/
+  final public Nodo CASO() throws ParseException {
+              Nodo valor, cuerpo; Token aux;
+    valor = NATIVO();
+    aux = jj_consume_token(7);
+    cuerpo = CUERPO();
+    Nodo nodo = FabricaAST.creaCaso(valor, cuerpo);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de un ciclo MIENTRAS, y 
+* crea la siguiente estructura para el AST. <br><br>
+* {@code MIENTRAS ::= "Mientras" "(" EXP ")" CUERPO}
+* <pre>
+*              __________
+*             | MIENTRAS |
+*             |__________|
+*                |     _____________
+*               (0)---| CONDICION   |
+*                |    |_____________|
+*               (1)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.MIENTRAS.
+*/
+  final public Nodo MIENTRAS() throws ParseException {
+                  Nodo exp, cuerpo; Token aux;
+    aux = jj_consume_token(PR_MIENTRAS);
+    jj_consume_token(1);
+    exp = EXP();
+    jj_consume_token(2);
+    cuerpo = CUERPO();
+    Nodo nodo = FabricaAST.creaMientras(exp, cuerpo);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* _____________________________________________________________
+* Esta producción detecta la existencia de un ciclo PARA, y crea
+* la siguiente estructura para el AST (el atributo cadena lleva
+* el valor 'para++' o 'para--' según lo dicta la entrada).<br><br>
+* {@code PARA ::= "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO}
+* <pre>
+*              __________
+*             | PARA     |
+*             |__________|
+*                |     _____________
+*               (0)---| DECLARACION |
+*                |    |_____________|
+*               (1)---| CONDICION   |
+*                |    |_____________|
+*               (2)---| CUERPO      |
+*                     |_____________|
+* </pre>
+* @return Nodo con rol Constantes.PARA.
+*/
+  final public Nodo PARA() throws ParseException {
+              Nodo dec, exp, cond, cuerpo; Token id, aux; int tipo, subrol;
+    aux = jj_consume_token(PR_PARA);
+    jj_consume_token(1);
+    tipo = TIPO_VAR();
+    id = jj_consume_token(ID);
+                              dec = FabricaAST.creaDeclaracion(tipo, id.image);
+    jj_consume_token(4);
+    exp = EXP();
+    jj_consume_token(PYC);
+                              dec.addHijo(exp);
+    cond = EXP();
+    jj_consume_token(PYC);
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case INCREMENTO:
+      jj_consume_token(INCREMENTO);
+                     subrol = Constantes.INCREMENTO;
+      break;
+    case DECREMENTO:
+      jj_consume_token(DECREMENTO);
+                     subrol = Constantes.DECREMENTO;
+      break;
+    default:
+      jj_la1[18] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    jj_consume_token(2);
+    cuerpo = CUERPO();
+    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, subrol);
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo DETENER (crea un nodo simple para el AST).<br><br>
+* {@code DETENER ::= "Detener" ";"}
+* <pre>
+*              __________
+*             | DETENER  |
+*             |__________|
+* </pre>
+* @return Nodo con rol Constantes.DETENER.
+*/
+  final public Nodo DETENER() throws ParseException {
+                 Token aux;
+    aux = jj_consume_token(PR_DETENER);
+    jj_consume_token(PYC);
+    Nodo nodo = FabricaAST.creaDetener();
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción detecta la existencia de una instrucción de 
+* tipo CONTINUAR (crea un nodo simple para el AST).<br><br>
+* {@code CONTINUAR ::= "Continuar" ";"}
+* <pre>
+*              ____________
+*             | CONTINUAR  |
+*             |____________|
+* </pre>
+* @return Nodo con rol Constantes.CONTINUAR.
+*/
+  final public Nodo CONTINUAR() throws ParseException {
+                   Token aux;
+    aux = jj_consume_token(PR_CONTINUAR);
+    jj_consume_token(PYC);
+    Nodo nodo = FabricaAST.creaContinuar();
+    nodo.setUbicacion(aux);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción inicia el trayecto para definir una expresión
+* dentro de SBScript, expresión que puede ser de tipo lógica,
+* relacional, aritmética o un valor puntual. A continuación se
+* detalla la precedencia que se le asigna a cada operador por
+* medio de la estructura de la gramática.<br><br>
+* {@code EXP ::= LOG_OR}
+* <pre>
+*  _______________________________________________________
+* | Operación              | Operador      | Precedencia  |
+* |_______________________________________________________|
+* | OR lógico              |  "||"         |   0 (menor)  |
+* | AND lógico             |  "&amp;&amp;"         |   1          |
+* | XOR lógico             |  "¿?"         |   2          |
+* | NOT lógico             |  "!"          |   3          |
+* | Comparación relacional |  Ver OP_REL() |   4          |
+* | Suma o concatenación   |  "+"          |   5          |
+* | Resta                  |  "-"          |   5          |
+* | Multiplicación         |  "*"          |   6          |
+* | División               |  "/"          |   6          |
+* | Módulo                 |  "%"          |   6          |
+* | Potenciación           |  "^"          |   7          |
+* | Menos (unario)         |  "-"          |   8          |
+* | Símbolos de agrupación |  Paréntesis   |   9 (mayor)  |
+* |________________________|_______________|______________|
+* </pre>
+* @return Nodo con el rol de la última expresión detectada.
+*/
+  final public Nodo EXP() throws ParseException {
+             Nodo nodo;
+    nodo = LOG_OR();
+    Expresion exp = new Expresion(nodo);
+    System.out.println(exp.resolver(new Contexto()).getValor());
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores OR aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_OR ::= LOG_AND ("||" LOG_AND)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA y el subrol Constantes.OPL_OR.
+*/
+  final public Nodo LOG_OR() throws ParseException {
+                Nodo nodo, temp, extra; Token op;
+    nodo = LOG_AND();
+    label_9:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 8:
+        ;
+        break;
+      default:
+        jj_la1[19] = jj_gen;
+        break label_9;
+      }
+      op = jj_consume_token(8);
+      extra = LOG_AND();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_OR, temp, extra);
+          nodo.setUbicacion(op);
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores AND aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_AND ::= LOG_XOR ("&&" LOG_XOR)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA y el subrol Constantes.OPL_AND.
+*/
+  final public Nodo LOG_AND() throws ParseException {
+                 Nodo nodo, temp, extra; Token op;
+    nodo = LOG_XOR();
+    label_10:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 9:
+        ;
+        break;
+      default:
+        jj_la1[20] = jj_gen;
+        break label_10;
+      }
+      op = jj_consume_token(9);
+      extra = LOG_XOR();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_AND, temp, extra);
+          nodo.setUbicacion(op);
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite una única expresión lógica o una
+* secuencia de operadores XOR aplicados entre dos expresiones 
+* lógicas.<br><br>
+* {@code LOG_XOR ::= LOG_NOT ("¿?" LOG_NOT)*}
+* @return Nodo directamente o con el rol Constantes.LOGICA y el subrol Constantes.OPL_XOR.
+*/
+  final public Nodo LOG_XOR() throws ParseException {
+                 Nodo nodo, temp, extra; Token op;
+    nodo = LOG_NOT();
+    label_11:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 10:
+        ;
+        break;
+      default:
+        jj_la1[21] = jj_gen;
+        break label_11;
+      }
+      op = jj_consume_token(10);
+      extra = LOG_NOT();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_XOR, temp, extra);
+          nodo.setUbicacion(op);
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite una única expresión o una negación 
+* lógica del valor obtenido por una expresión.<br><br>
+* {@code LOG_NOT ::= RELACIONAL | "!" LOG_NOT}
+* @return Nodo directamente o con el rol Constantes.LOGICA_UNARIA y el subrol Constantes.OPL_NOT.
+*/
+  final public Nodo LOG_NOT() throws ParseException {
+                 Nodo nodo, extra; Token op;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 1:
+    case 19:
+    case TRUE:
+    case FALSE:
+    case NUMERO:
+    case CADENA:
+    case ID:
+      nodo = RELACIONAL();
+      break;
+    case 11:
+      op = jj_consume_token(11);
+      extra = LOG_NOT();
+      nodo = FabricaAST.creaNot(extra, op.image);
+      nodo.setUbicacion(op);
+      break;
+    default:
+      jj_la1[22] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite una única expresión aritmétcia, o una
+* operación de índole relacional (comparativa) entre dos, y solo
+* dos, expresiones aritméticas. El operador viene dado por la 
+* producción OP_REL.<br><br>
+* {@code RELACIONAL ::= ARITM (OP_REL ARITM)}
+* @return Nodo directamente o con el rol Constantes.RELACIONAL y el subrol del operador relacional.
+*/
+  final public Nodo RELACIONAL() throws ParseException {
+                    Extra op; Nodo nodo, temp, extra;
+    nodo = ARITM();
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 12:
+    case 13:
+    case 14:
+    case 15:
+    case 16:
+    case 17:
+      op = OP_REL();
+      extra = ARITM();
+      temp = FabricaAST.copiar(nodo);
+      nodo = FabricaAST.creaRelacional(op.str, op.i, temp, extra);
+      nodo.setUbicacion(op.tok);
+      break;
+    default:
+      jj_la1[23] = jj_gen;
+      ;
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Producción que determina el operando a aplicar en una expresión
+* de tipo relacional.<br><br>
+* {@code OP_REL ::= ("==" | "!=" | ">" | ">=" | "<" | "<=")}
+* @return Extra con el token y el operador (entero) detectado.
+*/
+  final public Extra OP_REL() throws ParseException {
+                 int op; Token tok; Extra extra;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 12:
+      tok = jj_consume_token(12);
+               op = Constantes.OPR_EQU; extra = new Extra(tok, op);
+      break;
+    case 13:
+      tok = jj_consume_token(13);
+               op = Constantes.OPR_NEQ; extra = new Extra(tok, op);
+      break;
+    case 14:
+      tok = jj_consume_token(14);
+               op = Constantes.OPR_MAY; extra = new Extra(tok, op);
+      break;
+    case 15:
+      tok = jj_consume_token(15);
+               op = Constantes.OPR_MYE; extra = new Extra(tok, op);
+      break;
+    case 16:
+      tok = jj_consume_token(16);
+               op = Constantes.OPR_MEN; extra = new Extra(tok, op);
+      break;
+    case 17:
+      tok = jj_consume_token(17);
+               op = Constantes.OPR_MNE; extra = new Extra(tok, op);
+      break;
+    default:
+      jj_la1[24] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
+    }
+    {if (true) return extra;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite un único término, o una seguidilla de 
+* términos aplicando cualesquiera de los operandos (+, -) entre
+* ellos.<br><br>
+* {@code ARTIM ::= TERM ("+" TERM | "-" TERM)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA y el subrol del operador según corresponda.
+*/
+  final public Nodo ARITM() throws ParseException {
+               Nodo nodo, temp, extra; Token op;
+    nodo = TERM();
+    label_12:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 18:
+      case 19:
+        ;
+        break;
+      default:
+        jj_la1[25] = jj_gen;
+        break label_12;
+      }
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 18:
+        op = jj_consume_token(18);
+        extra = TERM();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_SUM, temp, extra);
+          nodo.setUbicacion(op);
+        break;
+      case 19:
+        op = jj_consume_token(19);
+        extra = TERM();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_RES, temp, extra);
+          nodo.setUbicacion(op);
+        break;
+      default:
+        jj_la1[26] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite un único factor, o una seguidilla de 
+* factores aplicando cualesquiera de los operandos (*, /, %) 
+* entre ellos.<br><br>
+* {@code TERM ::= FACT ("*" FACT | "/" FACT | "%" FACT)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA y el subrol del operador según corresponda.
+*/
+  final public Nodo TERM() throws ParseException {
+              Nodo nodo, temp, extra; Token op;
+    nodo = FACT();
+    label_13:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 20:
+      case 21:
+      case 22:
+        ;
+        break;
+      default:
+        jj_la1[27] = jj_gen;
+        break label_13;
+      }
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 20:
+        op = jj_consume_token(20);
+        extra = FACT();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MUL, temp, extra);
+          nodo.setUbicacion(op);
+        break;
+      case 21:
+        op = jj_consume_token(21);
+        extra = FACT();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_DIV, temp, extra);
+          nodo.setUbicacion(op);
+        break;
+      case 22:
+        op = jj_consume_token(22);
+        extra = FACT();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MOD, temp, extra);
+          nodo.setUbicacion(op);
+        break;
+      default:
+        jj_la1[28] = jj_gen;
+        jj_consume_token(-1);
+        throw new ParseException();
+      }
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción admite un único valor, o una seguidilla de 
+* valores aplicando el operando ^ entre ellos.<br><br>
+* {@code FACT ::= VAL ("^" VAL)*}
+* @return Nodo directamente o con el rol Constantes.ARITMETICA y el subrol del operador según corresponda.
+*/
+  final public Nodo FACT() throws ParseException {
+              Nodo nodo, temp, extra; Token op;
+    nodo = VAL();
+    label_14:
+    while (true) {
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 23:
+        ;
+        break;
+      default:
+        jj_la1[29] = jj_gen;
+        break label_14;
+      }
+      op = jj_consume_token(23);
+      extra = VAL();
+          temp = FabricaAST.copiar(nodo);
+          nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_POT, temp, extra);
+          nodo.setUbicacion(op);
+    }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
+
+/**
+* Esta producción puede reconocer la agrupación de expresiones por
+* medio de paréntesis; o un menos unario aplicado a un valor; o un 
+* acceso a una variable; o una llamada a un método (con 0 o más 
+* valores en sus parámetros); o un dato nativo.<br><br>
+* <pre>
+*    VAL ::= "(" EXP ")"
+*         | "-" VAL
+*         | id [ "(" [ EXP ("," EXP)* ] ")" ]
+*         | NATIVO
+* </pre>
+* @return Nodo directamente o con rol Constantes.ARITMETICA_UNITARIA o Constantes.VARIABLE o Constantes.LLAMADA.
+*/
+  final public Nodo VAL() throws ParseException {
+             Nodo nodo, temp; Token token, aux;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case 1:
+      jj_consume_token(1);
+      nodo = EXP();
+      jj_consume_token(2);
+      break;
+    case 19:
+      aux = jj_consume_token(19);
+      temp = VAL();
+      nodo = FabricaAST.creaMenosUnario(temp);
+      nodo.setUbicacion(aux);
+      break;
+    case ID:
+      token = jj_consume_token(ID);
+        nodo = FabricaAST.creaAccesoID(token.image);
+        nodo.setUbicacion(token);
+      switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+      case 1:
+        jj_consume_token(1);
+            nodo.setRol(Constantes.LLAMADA);
+        switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+        case 1:
+        case 11:
+        case 19:
+        case TRUE:
+        case FALSE:
+        case NUMERO:
+        case CADENA:
+        case ID:
+          temp = EXP();
+                     nodo.addHijo(temp);
+          label_15:
+          while (true) {
+            switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+            case 3:
+              ;
+              break;
+            default:
+              jj_la1[30] = jj_gen;
+              break label_15;
             }
             jj_consume_token(3);
-            exp = EXP();
-            nodo.addHijo(exp);
+            temp = EXP();
+                           nodo.addHijo(temp);
+          }
+          break;
+        default:
+          jj_la1[31] = jj_gen;
+          ;
         }
         jj_consume_token(2);
-        jj_consume_token(PYC);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  SI -> "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo SI y crea la siguiente estructura para el AST (el SINO es
-opcional, por lo tanto su presencia en el AST también lo es).
-             __________
-            | SI       |
-            |__________|
-               |     _______________
-              (0)---| CONDICION     |
-               |    |_______________|
-              (1)---| CUERPO (SI)   |
-               |    |_______________|
-              (2)---| CUERPO (SINO) |
-                    |_______________|
------------------------------------------------------------*/
-    final public Nodo SI() throws ParseException {
-        Nodo cond, si;
-        Nodo sino = null;
-        Token aux;
-        aux = jj_consume_token(PR_SI);
-        jj_consume_token(1);
-        cond = EXP();
-        jj_consume_token(2);
-        si = CUERPO();
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case PR_SINO:
-                jj_consume_token(PR_SINO);
-                sino = CUERPO();
-                break;
-            default:
-                jj_la1[16] = jj_gen;
-                ;
-        }
-        Nodo nodo = FabricaAST.creaSi(cond, si, sino);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  SELECCIONA -> "Selecciona" "(" EXP ")" ( CASO )+
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo SELECCIONA y crea la siguiente estructura para el AST 
-(con un mínimo de un caso establecido).
-             ____________
-            | SELECCIONA |
-            |____________|
-               |     _____________
-              (0)---| EXPRESION   |
-               |    |_____________|
-              (1)---| CASO 1      |
-               |    |_____________|
-              (2)---| CASO 2      |
-               |    |_____________|
-               |         . . .
-               |     _____________
-              (n)---| CASO n      |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo SELECCIONA() throws ParseException {
-        Nodo nodo, exp, caso;
-        Token aux;
-        aux = jj_consume_token(PR_SELECCIONA);
-        jj_consume_token(1);
-        exp = EXP();
-        jj_consume_token(2);
-        nodo = FabricaAST.creaSelecciona(exp);
-        label_8:
-        while (true) {
-            caso = CASO();
-            nodo.addHijo(caso);
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case TRUE:
-                case FALSE:
-                case NUMERO:
-                case CADENA:
+        break;
+      default:
+        jj_la1[32] = jj_gen;
         ;
-                    break;
-                default:
-                    jj_la1[17] = jj_gen;
-                    break label_8;
-            }
-        }
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+      }
+      break;
+    case TRUE:
+    case FALSE:
+    case NUMERO:
+    case CADENA:
+      nodo = NATIVO();
+      break;
+    default:
+      jj_la1[33] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
     }
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  CASO -> NATIVO ":" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un caso, cada caso está
-compuesto por un valor nativo y un cuerpo de instrucciones.
-             __________
-            | CASO     |
-            |__________|
-               |     _____________
-              (0)---| NATIVO      |
-               |    |_____________|
-              (1)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo CASO() throws ParseException {
-        Nodo valor, cuerpo;
-        Token aux;
-        valor = NATIVO();
-        aux = jj_consume_token(7);
-        cuerpo = CUERPO();
-        Nodo nodo = FabricaAST.creaCaso(valor, cuerpo);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+/**
+* Esta producción reconoce los datos básicos del lenguaje, un 
+* número, una cadena o un booleano en sus dos posibles valores.<br><br>
+* {@code NATIVO ::= numero | cadena | true | false}
+* @return Nodo con rol Constantes.NUMERO o Constantes.CADENA o Constantes.TRUE o Constantes.FALSE.
+*/
+  final public Nodo NATIVO() throws ParseException {
+                Nodo nodo; Token tok;
+    switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case NUMERO:
+      tok = jj_consume_token(NUMERO);
+      nodo = FabricaAST.creaNumero(tok.image);
+      break;
+    case CADENA:
+      tok = jj_consume_token(CADENA);
+      nodo = FabricaAST.creaCadena(tok.image);
+      break;
+    case TRUE:
+      tok = jj_consume_token(TRUE);
+      nodo = FabricaAST.creaTrue();
+      break;
+    case FALSE:
+      tok = jj_consume_token(FALSE);
+      nodo = FabricaAST.creaFalse();
+      break;
+    default:
+      jj_la1[34] = jj_gen;
+      jj_consume_token(-1);
+      throw new ParseException();
     }
+    nodo.setUbicacion(tok);
+    {if (true) return nodo;}
+    throw new Error("Missing return statement in function");
+  }
 
-    /*-----------------------------------------------------------
-  MIENTRAS -> "Mientras" "(" EXP ")" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un ciclo MIENTRAS, y 
-crea la siguiente estructura para el AST.
-             __________
-            | MIENTRAS |
-            |__________|
-               |     _____________
-              (0)---| CONDICION   |
-               |    |_____________|
-              (1)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo MIENTRAS() throws ParseException {
-        Nodo exp, cuerpo;
-        Token aux;
-        aux = jj_consume_token(PR_MIENTRAS);
-        jj_consume_token(1);
-        exp = EXP();
-        jj_consume_token(2);
-        cuerpo = CUERPO();
-        Nodo nodo = FabricaAST.creaMientras(exp, cuerpo);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
+  private boolean jj_2_1(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_1(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(0, xla); }
+  }
+
+  private boolean jj_2_2(int xla) {
+    jj_la = xla; jj_lastpos = jj_scanpos = token;
+    try { return !jj_3_2(); }
+    catch(LookaheadSuccess ls) { return true; }
+    finally { jj_save(1, xla); }
+  }
+
+  private boolean jj_3R_22() {
+    if (jj_scan_token(T_VOID)) return true;
+    return false;
+  }
+
+  private boolean jj_3_2() {
+    if (jj_3R_17()) return true;
+    return false;
+  }
+
+  private boolean jj_3R_21() {
+    if (jj_scan_token(T_BOOL)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_20() {
+    if (jj_scan_token(T_STR)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_19() {
+    if (jj_scan_token(T_NUM)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_18() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_19()) {
+    jj_scanpos = xsp;
+    if (jj_3R_20()) {
+    jj_scanpos = xsp;
+    if (jj_3R_21()) {
+    jj_scanpos = xsp;
+    if (jj_3R_22()) return true;
     }
-
-    /*-----------------------------------------------------------
-  PARA -> "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO
-_____________________________________________________________
-Esta producción detecta la existencia de un ciclo PARA, y crea
-la siguiente estructura para el AST (el atributo cadena lleva
-el valor 'para++' o 'para--' según lo dicta la entrada).
-             __________
-            | PARA     |
-            |__________|
-               |     _____________
-              (0)---| DECLARACION |
-               |    |_____________|
-              (1)---| CONDICION   |
-               |    |_____________|
-              (2)---| CUERPO      |
-                    |_____________|
------------------------------------------------------------*/
-    final public Nodo PARA() throws ParseException {
-        Nodo dec, exp, cond, cuerpo;
-        Token id, aux;
-        int tipo, subrol;
-        aux = jj_consume_token(PR_PARA);
-        jj_consume_token(1);
-        tipo = TIPO_VAR();
-        id = jj_consume_token(ID);
-        dec = FabricaAST.creaDeclaracion(tipo, id.image);
-        jj_consume_token(4);
-        exp = EXP();
-        jj_consume_token(PYC);
-        dec.addHijo(exp);
-        cond = EXP();
-        jj_consume_token(PYC);
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case INCREMENTO:
-                jj_consume_token(INCREMENTO);
-                subrol = Constantes.INCREMENTO;
-                break;
-            case DECREMENTO:
-                jj_consume_token(DECREMENTO);
-                subrol = Constantes.DECREMENTO;
-                break;
-            default:
-                jj_la1[18] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        jj_consume_token(2);
-        cuerpo = CUERPO();
-        Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, subrol);
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
     }
-
-    /*-----------------------------------------------------------
-  DETENER -> "Detener" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo DETENER (crea un nodo simple para el AST).
-             __________
-            | DETENER  |
-            |__________|
------------------------------------------------------------*/
-    final public Nodo DETENER() throws ParseException {
-        Token aux;
-        aux = jj_consume_token(PR_DETENER);
-        jj_consume_token(PYC);
-        Nodo nodo = FabricaAST.creaDetener();
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
     }
+    return false;
+  }
 
-    /*-----------------------------------------------------------
-  CONTINUAR -> "Continuar" ";"
-_____________________________________________________________
-Esta producción detecta la existencia de una instrucción de 
-tipo CONTINUAR (crea un nodo simple para el AST).
-             ____________
-            | CONTINUAR  |
-            |____________|
------------------------------------------------------------*/
-    final public Nodo CONTINUAR() throws ParseException {
-        Token aux;
-        aux = jj_consume_token(PR_CONTINUAR);
-        jj_consume_token(PYC);
-        Nodo nodo = FabricaAST.creaContinuar();
-        nodo.setUbicacion(aux);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  private boolean jj_3R_16() {
+    if (jj_3R_18()) return true;
+    if (jj_scan_token(ID)) return true;
+    if (jj_scan_token(1)) return true;
+    return false;
+  }
 
-    /*-----------------------------------------------------------
-  EXP -> LOG_OR
-_____________________________________________________________
-Esta producción inicia el trayecto para definir una expresión
-dentro de SBScript, expresión que puede ser de tipo lógica,
-relacional, aritmética o un valor puntual. A continuación se
-detalla la precedencia que se le asigna a cada operador por
-medio de la estructura de la gramática.
- __________________________________________________________
-| Operación                | Operador       | Precedencia  |
-|__________________________________________________________|
-| OR lógico                |  "||"          |   0 (menor)  |
-| AND lógico               |  "&&"          |   1          |
-| XOR lógico               |  "¿?"          |   2          |
-| NOT lógico               |  "!"           |   3          |
-| Comparación relacional   |  Ver OP_REL()  |   4          |
-| Suma o concatenación     |  "+"           |   5          |
-| Resta                    |  "-"           |   5          |
-| Multiplicación           |  "*"           |   6          |
-| División                 |  "/"           |   6          |
-| Módulo                   |  "%"           |   6          |
-| Potenciación             |  "^"           |   7          |
-| Menos (unario)           |  "-"           |   8          |
-| Símbolos de agrupación   |  Paréntesis    |   9 (mayor)  |
-|__________________________|________________|______________|
+  private boolean jj_3R_17() {
+    if (jj_scan_token(ID)) return true;
+    if (jj_scan_token(4)) return true;
+    return false;
+  }
 
------------------------------------------------------------*/
-    final public Nodo EXP() throws ParseException {
-        Nodo nodo;
-        nodo = LOG_OR();
-        Expresion exp = new Expresion(nodo);
-        System.out.println(exp.resolver(new Ambito()).getValor());
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  private boolean jj_3_1() {
+    if (jj_3R_16()) return true;
+    return false;
+  }
 
-    /*-----------------------------------------------------------
-  LOG_OR -> LOG_AND ("||" LOG_AND)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores OR aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
-    final public Nodo LOG_OR() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = LOG_AND();
-        label_9:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 8:
-        ;
-                    break;
-                default:
-                    jj_la1[19] = jj_gen;
-                    break label_9;
-            }
-            op = jj_consume_token(8);
-            extra = LOG_AND();
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_OR, temp, extra);
-            nodo.setUbicacion(op);
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Generated Token Manager. */
+  public ParserSBScriptTokenManager token_source;
+  SimpleCharStream jj_input_stream;
+  /** Current token. */
+  public Token token;
+  /** Next token. */
+  public Token jj_nt;
+  private int jj_ntk;
+  private Token jj_scanpos, jj_lastpos;
+  private int jj_la;
+  private int jj_gen;
+  final private int[] jj_la1 = new int[35];
+  static private int[] jj_la1_0;
+  static private int[] jj_la1_1;
+  static {
+      jj_la1_init_0();
+      jj_la1_init_1();
+   }
+   private static void jj_la1_init_0() {
+      jj_la1_0 = new int[] {0x20000000,0xe000000,0x3e000000,0x1e000000,0x8,0xe000000,0xe000000,0x8,0x10,0xce000000,0xce000000,0x8,0x10,0x8,0x80802,0x8,0x0,0x0,0x0,0x100,0x200,0x400,0x80802,0x3f000,0x3f000,0xc0000,0xc0000,0x700000,0x700000,0x800000,0x8,0x80802,0x2,0x80002,0x0,};
+   }
+   private static void jj_la1_init_1() {
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x207d,0x207d,0x0,0x0,0x0,0x3e00,0x0,0x2,0x1e00,0x180,0x0,0x0,0x0,0x3e00,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3e00,0x0,0x3e00,0x1e00,};
+   }
+  final private JJCalls[] jj_2_rtns = new JJCalls[2];
+  private boolean jj_rescan = false;
+  private int jj_gc = 0;
 
-    /*-----------------------------------------------------------
-  LOG_AND -> LOG_XOR ("&&" LOG_XOR)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores AND aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
-    final public Nodo LOG_AND() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = LOG_XOR();
-        label_10:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 9:
-        ;
-                    break;
-                default:
-                    jj_la1[20] = jj_gen;
-                    break label_10;
-            }
-            op = jj_consume_token(9);
-            extra = LOG_XOR();
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_AND, temp, extra);
-            nodo.setUbicacion(op);
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Constructor with InputStream. */
+  public ParserSBScript(java.io.InputStream stream) {
+     this(stream, null);
+  }
+  /** Constructor with InputStream and supplied encoding */
+  public ParserSBScript(java.io.InputStream stream, String encoding) {
+    try { jj_input_stream = new SimpleCharStream(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
+    token_source = new ParserSBScriptTokenManager(jj_input_stream);
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  LOG_XOR -> LOG_NOT ("¿?" LOG_NOT)*
-_____________________________________________________________
-Esta producción admite una única expresión lógica o una
-secuencia de operadores XOR aplicados entre dos expresiones 
-lógicas.
------------------------------------------------------------*/
-    final public Nodo LOG_XOR() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = LOG_NOT();
-        label_11:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 10:
-        ;
-                    break;
-                default:
-                    jj_la1[21] = jj_gen;
-                    break label_11;
-            }
-            op = jj_consume_token(10);
-            extra = LOG_NOT();
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaLogica(op.image, Constantes.OPL_XOR, temp, extra);
-            nodo.setUbicacion(op);
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Reinitialise. */
+  public void ReInit(java.io.InputStream stream) {
+     ReInit(stream, null);
+  }
+  /** Reinitialise. */
+  public void ReInit(java.io.InputStream stream, String encoding) {
+    try { jj_input_stream.ReInit(stream, encoding, 1, 1); } catch(java.io.UnsupportedEncodingException e) { throw new RuntimeException(e); }
+    token_source.ReInit(jj_input_stream);
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  LOG_NOT -> RELACIONAL
-          |  "!" LOG_NOT
-_____________________________________________________________
-Esta producción admite una única expresión o una negación 
-lógica del valor obtenido por una expresión.
------------------------------------------------------------*/
-    final public Nodo LOG_NOT() throws ParseException {
-        Nodo nodo, extra;
-        Token op;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 1:
-            case 19:
-            case TRUE:
-            case FALSE:
-            case NUMERO:
-            case CADENA:
-            case ID:
-                nodo = RELACIONAL();
-                break;
-            case 11:
-                op = jj_consume_token(11);
-                extra = LOG_NOT();
-                nodo = FabricaAST.creaNot(extra, op.image);
-                nodo.setUbicacion(op);
-                break;
-            default:
-                jj_la1[22] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Constructor. */
+  public ParserSBScript(java.io.Reader stream) {
+    jj_input_stream = new SimpleCharStream(stream, 1, 1);
+    token_source = new ParserSBScriptTokenManager(jj_input_stream);
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  RELACIONAL -> ARITM (OP_REL ARITM)
-_____________________________________________________________
-Esta producción admite una única expresión aritmétcia, o una
-operación de índole relacional (comparativa) entre dos, y solo
-dos, expresiones aritméticas. El operador viene dado por la 
-producción OP_REL.
------------------------------------------------------------*/
-    final public Nodo RELACIONAL() throws ParseException {
-        Extra op;
-        Nodo nodo, temp, extra;
-        nodo = ARITM();
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-                op = OP_REL();
-                extra = ARITM();
-                temp = FabricaAST.copiar(nodo);
-                nodo = FabricaAST.creaRelacional(op.str, op.i, temp, extra);
-                nodo.setUbicacion(op.tok);
-                break;
-            default:
-                jj_la1[23] = jj_gen;
-                ;
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Reinitialise. */
+  public void ReInit(java.io.Reader stream) {
+    jj_input_stream.ReInit(stream, 1, 1);
+    token_source.ReInit(jj_input_stream);
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  OP_REL -> ("==" | "!=" | ">" | ">=" | "<" | "<=")
-_____________________________________________________________
-Producción que determina el operando a aplicar en una expresión
-de tipo relacional.
------------------------------------------------------------*/
-    final public Extra OP_REL() throws ParseException {
-        int op;
-        Token tok;
-        Extra extra;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 12:
-                tok = jj_consume_token(12);
-                op = Constantes.OPR_EQU;
-                extra = new Extra(tok, op);
-                break;
-            case 13:
-                tok = jj_consume_token(13);
-                op = Constantes.OPR_NEQ;
-                extra = new Extra(tok, op);
-                break;
-            case 14:
-                tok = jj_consume_token(14);
-                op = Constantes.OPR_MAY;
-                extra = new Extra(tok, op);
-                break;
-            case 15:
-                tok = jj_consume_token(15);
-                op = Constantes.OPR_MYE;
-                extra = new Extra(tok, op);
-                break;
-            case 16:
-                tok = jj_consume_token(16);
-                op = Constantes.OPR_MEN;
-                extra = new Extra(tok, op);
-                break;
-            case 17:
-                tok = jj_consume_token(17);
-                op = Constantes.OPR_MNE;
-                extra = new Extra(tok, op);
-                break;
-            default:
-                jj_la1[24] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        {
-            if (true) {
-                return extra;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Constructor with generated Token Manager. */
+  public ParserSBScript(ParserSBScriptTokenManager tm) {
+    token_source = tm;
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  ARTIM -> TERM ("+" TERM | "-" TERM)*
-_____________________________________________________________
-Esta producción admite un único término, o una seguidilla de 
-términos aplicando cualesquiera de los operandos (+, -) entre
-ellos.
------------------------------------------------------------*/
-    final public Nodo ARITM() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = TERM();
-        label_12:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 18:
-                case 19:
-        ;
-                    break;
-                default:
-                    jj_la1[25] = jj_gen;
-                    break label_12;
-            }
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 18:
-                    op = jj_consume_token(18);
-                    extra = TERM();
-                    temp = FabricaAST.copiar(nodo);
-                    nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_SUM, temp, extra);
-                    nodo.setUbicacion(op);
-                    break;
-                case 19:
-                    op = jj_consume_token(19);
-                    extra = TERM();
-                    temp = FabricaAST.copiar(nodo);
-                    nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_RES, temp, extra);
-                    nodo.setUbicacion(op);
-                    break;
-                default:
-                    jj_la1[26] = jj_gen;
-                    jj_consume_token(-1);
-                    throw new ParseException();
-            }
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
+  /** Reinitialise. */
+  public void ReInit(ParserSBScriptTokenManager tm) {
+    token_source = tm;
+    token = new Token();
+    jj_ntk = -1;
+    jj_gen = 0;
+    for (int i = 0; i < 35; i++) jj_la1[i] = -1;
+    for (int i = 0; i < jj_2_rtns.length; i++) jj_2_rtns[i] = new JJCalls();
+  }
 
-    /*-----------------------------------------------------------
-  TERM -> FACT ("*" FACT | "/" FACT | "%" FACT)*
-_____________________________________________________________
-Esta producción admite un único factor, o una seguidilla de 
-factores aplicando cualesquiera de los operandos (*, /, %) 
-entre ellos.
------------------------------------------------------------*/
-    final public Nodo TERM() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = FACT();
-        label_13:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 20:
-                case 21:
-                case 22:
-        ;
-                    break;
-                default:
-                    jj_la1[27] = jj_gen;
-                    break label_13;
-            }
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 20:
-                    op = jj_consume_token(20);
-                    extra = FACT();
-                    temp = FabricaAST.copiar(nodo);
-                    nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MUL, temp, extra);
-                    nodo.setUbicacion(op);
-                    break;
-                case 21:
-                    op = jj_consume_token(21);
-                    extra = FACT();
-                    temp = FabricaAST.copiar(nodo);
-                    nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_DIV, temp, extra);
-                    nodo.setUbicacion(op);
-                    break;
-                case 22:
-                    op = jj_consume_token(22);
-                    extra = FACT();
-                    temp = FabricaAST.copiar(nodo);
-                    nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_MOD, temp, extra);
-                    nodo.setUbicacion(op);
-                    break;
-                default:
-                    jj_la1[28] = jj_gen;
-                    jj_consume_token(-1);
-                    throw new ParseException();
-            }
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-  FACT -> VAL ("^" VAL)*
-_____________________________________________________________
-Esta producción admite un único valor, o una seguidilla de 
-valores aplicando el operando ^ entre ellos.
------------------------------------------------------------*/
-    final public Nodo FACT() throws ParseException {
-        Nodo nodo, temp, extra;
-        Token op;
-        nodo = VAL();
-        label_14:
-        while (true) {
-            switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                case 23:
-        ;
-                    break;
-                default:
-                    jj_la1[29] = jj_gen;
-                    break label_14;
-            }
-            op = jj_consume_token(23);
-            extra = VAL();
-            temp = FabricaAST.copiar(nodo);
-            nodo = FabricaAST.creaAritmetica(op.image, Constantes.OPA_POT, temp, extra);
-            nodo.setUbicacion(op);
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-   VAL -> "(" EXP ")"
-        | "-" VAL
-        | id [ "(" [ EXP ("," EXP)* ] ")" ]
-        | NATIVO
-_____________________________________________________________
-Esta producción puede reconocer la agrupación de expresiones por
-medio de paréntesis; o un menos unario aplicado a un valor; o un 
-acceso a una variable; o una llamada a un método (con 0 o más 
-valores en sus parámetros); o un dato nativo.
------------------------------------------------------------*/
-    final public Nodo VAL() throws ParseException {
-        Nodo nodo, temp;
-        Token token, aux;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case 1:
-                jj_consume_token(1);
-                nodo = EXP();
-                jj_consume_token(2);
-                break;
-            case 19:
-                aux = jj_consume_token(19);
-                temp = VAL();
-                nodo = FabricaAST.creaMenosUnario(temp);
-                nodo.setUbicacion(aux);
-                break;
-            case ID:
-                token = jj_consume_token(ID);
-                nodo = FabricaAST.creaAccesoID(token.image);
-                nodo.setUbicacion(token);
-                switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                    case 1:
-                        jj_consume_token(1);
-                        nodo.setRol(Constantes.LLAMADA);
-                        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                            case 1:
-                            case 11:
-                            case 19:
-                            case TRUE:
-                            case FALSE:
-                            case NUMERO:
-                            case CADENA:
-                            case ID:
-                                temp = EXP();
-                                nodo.addHijo(temp);
-                                label_15:
-                                while (true) {
-                                    switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-                                        case 3:
-              ;
-                                            break;
-                                        default:
-                                            jj_la1[30] = jj_gen;
-                                            break label_15;
-                                    }
-                                    jj_consume_token(3);
-                                    temp = EXP();
-                                    nodo.addHijo(temp);
-                                }
-                                break;
-                            default:
-                                jj_la1[31] = jj_gen;
-                                ;
-                        }
-                        jj_consume_token(2);
-                        break;
-                    default:
-                        jj_la1[32] = jj_gen;
-                        ;
-                }
-                break;
-            case TRUE:
-            case FALSE:
-            case NUMERO:
-            case CADENA:
-                nodo = NATIVO();
-                break;
-            default:
-                jj_la1[33] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    /*-----------------------------------------------------------
-NATIVO -> numero
-        | cadena
-        | true
-        | false
-_____________________________________________________________
-Esta producción reconoce los datos básicos del lenguaje, un 
-número, una cadena o un booleano en sus dos posibles valores.
------------------------------------------------------------*/
-    final public Nodo NATIVO() throws ParseException {
-        Nodo nodo;
-        Token tok;
-        switch ((jj_ntk == -1) ? jj_ntk() : jj_ntk) {
-            case NUMERO:
-                tok = jj_consume_token(NUMERO);
-                nodo = FabricaAST.creaNumero(tok.image);
-                break;
-            case CADENA:
-                tok = jj_consume_token(CADENA);
-                nodo = FabricaAST.creaCadena(tok.image);
-                break;
-            case TRUE:
-                tok = jj_consume_token(TRUE);
-                nodo = FabricaAST.creaTrue();
-                break;
-            case FALSE:
-                tok = jj_consume_token(FALSE);
-                nodo = FabricaAST.creaFalse();
-                break;
-            default:
-                jj_la1[34] = jj_gen;
-                jj_consume_token(-1);
-                throw new ParseException();
-        }
-        nodo.setUbicacion(tok);
-        {
-            if (true) {
-                return nodo;
-            }
-        }
-        throw new Error("Missing return statement in function");
-    }
-
-    private boolean jj_2_1(int xla) {
-        jj_la = xla;
-        jj_lastpos = jj_scanpos = token;
-        try {
-            return !jj_3_1();
-        } catch (LookaheadSuccess ls) {
-            return true;
-        } finally {
-            jj_save(0, xla);
-        }
-    }
-
-    private boolean jj_2_2(int xla) {
-        jj_la = xla;
-        jj_lastpos = jj_scanpos = token;
-        try {
-            return !jj_3_2();
-        } catch (LookaheadSuccess ls) {
-            return true;
-        } finally {
-            jj_save(1, xla);
-        }
-    }
-
-    private boolean jj_3R_20() {
-        if (jj_scan_token(T_STR)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3_2() {
-        if (jj_3R_17()) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3R_19() {
-        if (jj_scan_token(T_NUM)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3R_18() {
-        Token xsp;
-        xsp = jj_scanpos;
-        if (jj_3R_19()) {
-            jj_scanpos = xsp;
-            if (jj_3R_20()) {
-                jj_scanpos = xsp;
-                if (jj_3R_21()) {
-                    jj_scanpos = xsp;
-                    if (jj_3R_22()) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean jj_3R_16() {
-        if (jj_3R_18()) {
-            return true;
-        }
-        if (jj_scan_token(ID)) {
-            return true;
-        }
-        if (jj_scan_token(1)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3R_22() {
-        if (jj_scan_token(T_VOID)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3_1() {
-        if (jj_3R_16()) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3R_17() {
-        if (jj_scan_token(ID)) {
-            return true;
-        }
-        if (jj_scan_token(4)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean jj_3R_21() {
-        if (jj_scan_token(T_BOOL)) {
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Generated Token Manager.
-     */
-    public ParserSBScriptTokenManager token_source;
-    SimpleCharStream jj_input_stream;
-    /**
-     * Current token.
-     */
-    public Token token;
-    /**
-     * Next token.
-     */
-    public Token jj_nt;
-    private int jj_ntk;
-    private Token jj_scanpos, jj_lastpos;
-    private int jj_la;
-    private int jj_gen;
-    final private int[] jj_la1 = new int[35];
-    static private int[] jj_la1_0;
-    static private int[] jj_la1_1;
-
-    static {
-        jj_la1_init_0();
-        jj_la1_init_1();
-    }
-
-    private static void jj_la1_init_0() {
-        jj_la1_0 = new int[]{0x20000000, 0xe000000, 0x3e000000, 0x1e000000, 0x8, 0xe000000, 0xe000000, 0x8, 0x10, 0xce000000, 0xce000000, 0x8, 0x10, 0x8, 0x80802, 0x8, 0x0, 0x0, 0x0, 0x100, 0x200, 0x400, 0x80802, 0x3f000, 0x3f000, 0xc0000, 0xc0000, 0x700000, 0x700000, 0x800000, 0x8, 0x80802, 0x2, 0x80002, 0x0,};
-    }
-
-    private static void jj_la1_init_1() {
-        jj_la1_1 = new int[]{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x207d, 0x207d, 0x0, 0x0, 0x0, 0x3e00, 0x0, 0x2, 0x1e00, 0x180, 0x0, 0x0, 0x0, 0x3e00, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3e00, 0x0, 0x3e00, 0x1e00,};
-    }
-    final private JJCalls[] jj_2_rtns = new JJCalls[2];
-    private boolean jj_rescan = false;
-    private int jj_gc = 0;
-
-    /**
-     * Constructor with InputStream.
-     */
-    public ParserSBScript(java.io.InputStream stream) {
-        this(stream, null);
-    }
-
-    /**
-     * Constructor with InputStream and supplied encoding
-     */
-    public ParserSBScript(java.io.InputStream stream, String encoding) {
-        try {
-            jj_input_stream = new SimpleCharStream(stream, encoding, 1, 1);
-        } catch (java.io.UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        token_source = new ParserSBScriptTokenManager(jj_input_stream);
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
+  private Token jj_consume_token(int kind) throws ParseException {
+    Token oldToken;
+    if ((oldToken = token).next != null) token = token.next;
+    else token = token.next = token_source.getNextToken();
+    jj_ntk = -1;
+    if (token.kind == kind) {
+      jj_gen++;
+      if (++jj_gc > 100) {
+        jj_gc = 0;
         for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
+          JJCalls c = jj_2_rtns[i];
+          while (c != null) {
+            if (c.gen < jj_gen) c.first = null;
+            c = c.next;
+          }
         }
+      }
+      return token;
     }
+    token = oldToken;
+    jj_kind = kind;
+    throw generateParseException();
+  }
 
-    /**
-     * Reinitialise.
-     */
-    public void ReInit(java.io.InputStream stream) {
-        ReInit(stream, null);
+  static private final class LookaheadSuccess extends java.lang.Error { }
+  final private LookaheadSuccess jj_ls = new LookaheadSuccess();
+  private boolean jj_scan_token(int kind) {
+    if (jj_scanpos == jj_lastpos) {
+      jj_la--;
+      if (jj_scanpos.next == null) {
+        jj_lastpos = jj_scanpos = jj_scanpos.next = token_source.getNextToken();
+      } else {
+        jj_lastpos = jj_scanpos = jj_scanpos.next;
+      }
+    } else {
+      jj_scanpos = jj_scanpos.next;
     }
-
-    /**
-     * Reinitialise.
-     */
-    public void ReInit(java.io.InputStream stream, String encoding) {
-        try {
-            jj_input_stream.ReInit(stream, encoding, 1, 1);
-        } catch (java.io.UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
-        token_source.ReInit(jj_input_stream);
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
-        for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
-        }
+    if (jj_rescan) {
+      int i = 0; Token tok = token;
+      while (tok != null && tok != jj_scanpos) { i++; tok = tok.next; }
+      if (tok != null) jj_add_error_token(kind, i);
     }
+    if (jj_scanpos.kind != kind) return true;
+    if (jj_la == 0 && jj_scanpos == jj_lastpos) throw jj_ls;
+    return false;
+  }
 
-    /**
-     * Constructor.
-     */
-    public ParserSBScript(java.io.Reader stream) {
-        jj_input_stream = new SimpleCharStream(stream, 1, 1);
-        token_source = new ParserSBScriptTokenManager(jj_input_stream);
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
-        for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
-        }
+
+/** Get the next Token. */
+  final public Token getNextToken() {
+    if (token.next != null) token = token.next;
+    else token = token.next = token_source.getNextToken();
+    jj_ntk = -1;
+    jj_gen++;
+    return token;
+  }
+
+/** Get the specific Token. */
+  final public Token getToken(int index) {
+    Token t = token;
+    for (int i = 0; i < index; i++) {
+      if (t.next != null) t = t.next;
+      else t = t.next = token_source.getNextToken();
     }
+    return t;
+  }
 
-    /**
-     * Reinitialise.
-     */
-    public void ReInit(java.io.Reader stream) {
-        jj_input_stream.ReInit(stream, 1, 1);
-        token_source.ReInit(jj_input_stream);
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
-        for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
-        }
-    }
+  private int jj_ntk() {
+    if ((jj_nt=token.next) == null)
+      return (jj_ntk = (token.next=token_source.getNextToken()).kind);
+    else
+      return (jj_ntk = jj_nt.kind);
+  }
 
-    /**
-     * Constructor with generated Token Manager.
-     */
-    public ParserSBScript(ParserSBScriptTokenManager tm) {
-        token_source = tm;
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
-        for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
-        }
-    }
+  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private int[] jj_expentry;
+  private int jj_kind = -1;
+  private int[] jj_lasttokens = new int[100];
+  private int jj_endpos;
 
-    /**
-     * Reinitialise.
-     */
-    public void ReInit(ParserSBScriptTokenManager tm) {
-        token_source = tm;
-        token = new Token();
-        jj_ntk = -1;
-        jj_gen = 0;
-        for (int i = 0; i < 35; i++) {
-            jj_la1[i] = -1;
-        }
-        for (int i = 0; i < jj_2_rtns.length; i++) {
-            jj_2_rtns[i] = new JJCalls();
-        }
-    }
-
-    private Token jj_consume_token(int kind) throws ParseException {
-        Token oldToken;
-        if ((oldToken = token).next != null) {
-            token = token.next;
-        } else {
-            token = token.next = token_source.getNextToken();
-        }
-        jj_ntk = -1;
-        if (token.kind == kind) {
-            jj_gen++;
-            if (++jj_gc > 100) {
-                jj_gc = 0;
-                for (int i = 0; i < jj_2_rtns.length; i++) {
-                    JJCalls c = jj_2_rtns[i];
-                    while (c != null) {
-                        if (c.gen < jj_gen) {
-                            c.first = null;
-                        }
-                        c = c.next;
-                    }
-                }
+  private void jj_add_error_token(int kind, int pos) {
+    if (pos >= 100) return;
+    if (pos == jj_endpos + 1) {
+      jj_lasttokens[jj_endpos++] = kind;
+    } else if (jj_endpos != 0) {
+      jj_expentry = new int[jj_endpos];
+      for (int i = 0; i < jj_endpos; i++) {
+        jj_expentry[i] = jj_lasttokens[i];
+      }
+      boolean exists = false;
+      for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
+        exists = true;
+        int[] oldentry = (int[])(it.next());
+        if (oldentry.length == jj_expentry.length) {
+          for (int i = 0; i < jj_expentry.length; i++) {
+            if (oldentry[i] != jj_expentry[i]) {
+              exists = false;
+              break;
             }
-            return token;
+          }
+          if (exists) break;
         }
-        token = oldToken;
-        jj_kind = kind;
-        throw generateParseException();
+      }
+      if (!exists) jj_expentries.add(jj_expentry);
+      if (pos != 0) jj_lasttokens[(jj_endpos = pos) - 1] = kind;
     }
+  }
 
-    static private final class LookaheadSuccess extends java.lang.Error {
+  /** Generate ParseException. */
+  public ParseException generateParseException() {
+    jj_expentries.clear();
+    boolean[] la1tokens = new boolean[57];
+    if (jj_kind >= 0) {
+      la1tokens[jj_kind] = true;
+      jj_kind = -1;
     }
-    final private LookaheadSuccess jj_ls = new LookaheadSuccess();
-
-    private boolean jj_scan_token(int kind) {
-        if (jj_scanpos == jj_lastpos) {
-            jj_la--;
-            if (jj_scanpos.next == null) {
-                jj_lastpos = jj_scanpos = jj_scanpos.next = token_source.getNextToken();
-            } else {
-                jj_lastpos = jj_scanpos = jj_scanpos.next;
-            }
-        } else {
-            jj_scanpos = jj_scanpos.next;
+    for (int i = 0; i < 35; i++) {
+      if (jj_la1[i] == jj_gen) {
+        for (int j = 0; j < 32; j++) {
+          if ((jj_la1_0[i] & (1<<j)) != 0) {
+            la1tokens[j] = true;
+          }
+          if ((jj_la1_1[i] & (1<<j)) != 0) {
+            la1tokens[32+j] = true;
+          }
         }
-        if (jj_rescan) {
-            int i = 0;
-            Token tok = token;
-            while (tok != null && tok != jj_scanpos) {
-                i++;
-                tok = tok.next;
-            }
-            if (tok != null) {
-                jj_add_error_token(kind, i);
-            }
-        }
-        if (jj_scanpos.kind != kind) {
-            return true;
-        }
-        if (jj_la == 0 && jj_scanpos == jj_lastpos) {
-            throw jj_ls;
-        }
-        return false;
+      }
     }
-
-    /**
-     * Get the next Token.
-     */
-    final public Token getNextToken() {
-        if (token.next != null) {
-            token = token.next;
-        } else {
-            token = token.next = token_source.getNextToken();
-        }
-        jj_ntk = -1;
-        jj_gen++;
-        return token;
+    for (int i = 0; i < 57; i++) {
+      if (la1tokens[i]) {
+        jj_expentry = new int[1];
+        jj_expentry[0] = i;
+        jj_expentries.add(jj_expentry);
+      }
     }
-
-    /**
-     * Get the specific Token.
-     */
-    final public Token getToken(int index) {
-        Token t = token;
-        for (int i = 0; i < index; i++) {
-            if (t.next != null) {
-                t = t.next;
-            } else {
-                t = t.next = token_source.getNextToken();
-            }
-        }
-        return t;
+    jj_endpos = 0;
+    jj_rescan_token();
+    jj_add_error_token(0, 0);
+    int[][] exptokseq = new int[jj_expentries.size()][];
+    for (int i = 0; i < jj_expentries.size(); i++) {
+      exptokseq[i] = jj_expentries.get(i);
     }
+    return new ParseException(token, exptokseq, tokenImage);
+  }
 
-    private int jj_ntk() {
-        if ((jj_nt = token.next) == null) {
-            return (jj_ntk = (token.next = token_source.getNextToken()).kind);
-        } else {
-            return (jj_ntk = jj_nt.kind);
+  /** Enable tracing. */
+  final public void enable_tracing() {
+  }
+
+  /** Disable tracing. */
+  final public void disable_tracing() {
+  }
+
+  private void jj_rescan_token() {
+    jj_rescan = true;
+    for (int i = 0; i < 2; i++) {
+    try {
+      JJCalls p = jj_2_rtns[i];
+      do {
+        if (p.gen > jj_gen) {
+          jj_la = p.arg; jj_lastpos = jj_scanpos = p.first;
+          switch (i) {
+            case 0: jj_3_1(); break;
+            case 1: jj_3_2(); break;
+          }
         }
+        p = p.next;
+      } while (p != null);
+      } catch(LookaheadSuccess ls) { }
     }
+    jj_rescan = false;
+  }
 
-    private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
-    private int[] jj_expentry;
-    private int jj_kind = -1;
-    private int[] jj_lasttokens = new int[100];
-    private int jj_endpos;
-
-    private void jj_add_error_token(int kind, int pos) {
-        if (pos >= 100) {
-            return;
-        }
-        if (pos == jj_endpos + 1) {
-            jj_lasttokens[jj_endpos++] = kind;
-        } else if (jj_endpos != 0) {
-            jj_expentry = new int[jj_endpos];
-            for (int i = 0; i < jj_endpos; i++) {
-                jj_expentry[i] = jj_lasttokens[i];
-            }
-            boolean exists = false;
-            for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
-                exists = true;
-                int[] oldentry = (int[]) (it.next());
-                if (oldentry.length == jj_expentry.length) {
-                    for (int i = 0; i < jj_expentry.length; i++) {
-                        if (oldentry[i] != jj_expentry[i]) {
-                            exists = false;
-                            break;
-                        }
-                    }
-                    if (exists) {
-                        break;
-                    }
-                }
-            }
-            if (!exists) {
-                jj_expentries.add(jj_expentry);
-            }
-            if (pos != 0) {
-                jj_lasttokens[(jj_endpos = pos) - 1] = kind;
-            }
-        }
+  private void jj_save(int index, int xla) {
+    JJCalls p = jj_2_rtns[index];
+    while (p.gen > jj_gen) {
+      if (p.next == null) { p = p.next = new JJCalls(); break; }
+      p = p.next;
     }
+    p.gen = jj_gen + xla - jj_la; p.first = token; p.arg = xla;
+  }
 
-    /**
-     * Generate ParseException.
-     */
-    public ParseException generateParseException() {
-        jj_expentries.clear();
-        boolean[] la1tokens = new boolean[57];
-        if (jj_kind >= 0) {
-            la1tokens[jj_kind] = true;
-            jj_kind = -1;
-        }
-        for (int i = 0; i < 35; i++) {
-            if (jj_la1[i] == jj_gen) {
-                for (int j = 0; j < 32; j++) {
-                    if ((jj_la1_0[i] & (1 << j)) != 0) {
-                        la1tokens[j] = true;
-                    }
-                    if ((jj_la1_1[i] & (1 << j)) != 0) {
-                        la1tokens[32 + j] = true;
-                    }
-                }
-            }
-        }
-        for (int i = 0; i < 57; i++) {
-            if (la1tokens[i]) {
-                jj_expentry = new int[1];
-                jj_expentry[0] = i;
-                jj_expentries.add(jj_expentry);
-            }
-        }
-        jj_endpos = 0;
-        jj_rescan_token();
-        jj_add_error_token(0, 0);
-        int[][] exptokseq = new int[jj_expentries.size()][];
-        for (int i = 0; i < jj_expentries.size(); i++) {
-            exptokseq[i] = jj_expentries.get(i);
-        }
-        return new ParseException(token, exptokseq, tokenImage);
-    }
-
-    /**
-     * Enable tracing.
-     */
-    final public void enable_tracing() {
-    }
-
-    /**
-     * Disable tracing.
-     */
-    final public void disable_tracing() {
-    }
-
-    private void jj_rescan_token() {
-        jj_rescan = true;
-        for (int i = 0; i < 2; i++) {
-            try {
-                JJCalls p = jj_2_rtns[i];
-                do {
-                    if (p.gen > jj_gen) {
-                        jj_la = p.arg;
-                        jj_lastpos = jj_scanpos = p.first;
-                        switch (i) {
-                            case 0:
-                                jj_3_1();
-                                break;
-                            case 1:
-                                jj_3_2();
-                                break;
-                        }
-                    }
-                    p = p.next;
-                } while (p != null);
-            } catch (LookaheadSuccess ls) {
-            }
-        }
-        jj_rescan = false;
-    }
-
-    private void jj_save(int index, int xla) {
-        JJCalls p = jj_2_rtns[index];
-        while (p.gen > jj_gen) {
-            if (p.next == null) {
-                p = p.next = new JJCalls();
-                break;
-            }
-            p = p.next;
-        }
-        p.gen = jj_gen + xla - jj_la;
-        p.first = token;
-        p.arg = xla;
-    }
-
-    static final class JJCalls {
-
-        int gen;
-        Token first;
-        int arg;
-        JJCalls next;
-    }
+  static final class JJCalls {
+    int gen;
+    Token first;
+    int arg;
+    JJCalls next;
+  }
 
 }
 
 /**
- * Clase auxiliar adicional para manejar el retorno de dos datos de diferente
- * tipo.
- *
- * @author esvux
- */
+* Clase auxiliar adicional para manejar el retorno de dos datos de
+* diferente tipo.
+* @author esvux
+*/
 class Extra {
 
-    Token tok;
-    String str;
-    int i;
+  Token tok;
+  String str;
+  int i;
 
-    Extra(Token tok, int i) {
-        this.tok = tok;
-        this.str = tok.image;
-        this.i = i;
-    }
+  Extra(Token tok, int i) {
+      this.tok = tok;
+      this.str = tok.image;
+      this.i = i;
+  }
 
 }

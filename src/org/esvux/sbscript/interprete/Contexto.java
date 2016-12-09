@@ -7,20 +7,20 @@ import java.util.HashMap;
  *
  * @author esvux
  */
-public class Ambito {
+public class Contexto {
 
     private HashMap<String, Variable> variables;
 
-    public Ambito() {
+    public Contexto() {
         variables = new HashMap<>();
     }
     
-    public void limpiarAmbito(int nivel) {
+    public void limpiarContexto(int nivel) {
         Iterator<Variable> it = variables.values().iterator();
         HashMap<String, Variable> limpias = new HashMap<>();
         while (it.hasNext()) {
             Variable next = it.next();
-            if (next.getAmbito() != nivel) {
+            if (next.getNivel() != nivel) {
                 limpias.put(next.getNombre(), next);
             }
         }
@@ -30,6 +30,22 @@ public class Ambito {
 
     public Variable getVariable(String nombre) {
         return variables.get(nombre);
+    }
+    
+    public boolean existeVariable(String nombre) {
+        return variables.containsKey(nombre);
+    }
+    
+    public void addVariable(Variable var) {
+        this.variables.put(var.getNombre(), var);
+    }
+    
+    public void reporte() {
+        Iterator<Variable> it = variables.values().iterator();
+        while (it.hasNext()) {
+            Variable next = it.next();
+            System.out.println(next.toString());
+        }        
     }
 
 }

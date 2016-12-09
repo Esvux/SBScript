@@ -2,7 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -16,7 +16,7 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
     }
 
     @Override
-    public Resultado ejecutar(Ambito ctx, int nivel) {
+    public Resultado ejecutar(Contexto ctx, int nivel) {
         if (!instruccion.esDeRol(Constantes.CUERPO)) {
             return new Resultado();
         }
