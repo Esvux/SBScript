@@ -14,14 +14,12 @@ options {
 PARSER_BEGIN(ParserSBScript)
 package org.esvux.sbscript.parser;
 
+import org.esvux.sbscript.interprete.Interprete;
 import org.esvux.sbscript.errores.Errores;
-import org.esvux.sbscript.ast.Nodo;
-import org.esvux.sbscript.ast.Metodo;
-import org.esvux.sbscript.ast.Programa;
 import org.esvux.sbscript.ast.FabricaAST;
 import org.esvux.sbscript.ast.Constantes;
-import org.esvux.sbscript.interprete.expresiones.Expresion;
-import org.esvux.sbscript.interprete.Ambito;
+import org.esvux.sbscript.ast.Metodo;
+import org.esvux.sbscript.ast.Nodo;
 
 /**
 * Clase principal para el análisis (parseo) de la cadena de entrada
@@ -75,24 +73,23 @@ PARSER_END(ParserSBScript)
 * un LOOKAHEAD, que determina el número de caracteres de anticipo
 * para realizar el análisis sintáctico (3 para diferenciar entre
 * una definición de método y una declaración de variables). Toda
-* esta información se almacena en un objeto programa.<br><br>
+* esta información se almacena en las propiedades estáticas del
+* objeto Interprete.<br><br>
 * {@code PROGRAMA ::= ( PRINCIPAL | METODO | DEC_GLOBAL )+ }
-* @return Objeto programa con toda la información de SBScript.
 */
-Programa PROGRAMA():{ Programa pro = new Programa(); Metodo met; Nodo dec; }
+void PROGRAMA():{ Metodo met; Nodo dec; }
 {
   (
     met=PRINCIPAL()
-    { pro.setPrincipal(met); }
+    { Interprete.setPrincipal(met); }
   |
     LOOKAHEAD(3)
     met=METODO()
-    { pro.addMetodo(met); }
+    { Interprete.addMetodo(met); }
   |
     dec=DEC_GLOBAL()
-    { pro.addVariables(dec); }
+    { Interprete.addVariables(dec); }
   )+
-  { return pro; }
 }
 
 
@@ -145,15 +142,32 @@ int TIPO_MET():{ int tipo; }
 * {@code METODO ::= TIPO_MET id "(" [ TIPO_VAR id ("," TIPO_VAR id)* ] ")" CUERPO}
 * @return Objeto método, con nombre y cuerpo propio.
 */
-Metodo METODO():{ Nodo cuerpo; Token id; int tipo; Metodo metodo; }
+Metodo METODO():{ Nodo cuerpo; Token met, id; int tipo; Metodo metodo; }
 {
-  tipo=TIPO_MET() id=<ID> 
-  { metodo = FabricaAST.creaMetodo(id.image, tipo); }
-  "(" [ tipo=TIPO_VAR() id=<ID> 
-  { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); }
-  ( "," tipo=TIPO_VAR() id=<ID> 
-    { metodo.addParam(FabricaAST.creaParametro(id.image, tipo)); } 
-  )* ] ")"
+  tipo=TIPO_MET() met=<ID> 
+    { 
+      metodo = FabricaAST.creaMetodo(met.image, tipo); 
+    }
+  "(" 
+  [ tipo=TIPO_VAR() id=<ID> 
+    { 
+      if(! metodo.addParam(FabricaAST.creaParametro(id.image, tipo))){
+        Errores.getInstance().nuevoErrorSemantico(id.beginLine, id.beginColumn, 
+                "Imposible definir dos o más parámetros con el mismo nombre para el método '"+met.image+"'");
+        metodo.marcarComoIncorrecto();
+      }
+    }
+    ( "," tipo=TIPO_VAR() id=<ID> 
+      { 
+        if(! metodo.addParam(FabricaAST.creaParametro(id.image, tipo))){
+          Errores.getInstance().nuevoErrorSemantico(id.beginLine, id.beginColumn, 
+                  "Imposible definir dos o más parámetros con el mismo nombre para el método '"+met.image+"'");
+          metodo.marcarComoIncorrecto();
+        }
+      } 
+    )* 
+  ] 
+  ")"
   cuerpo=CUERPO() 
   { 
     metodo.setCuerpo(cuerpo); 
@@ -683,8 +697,6 @@ Nodo EXP():{ Nodo nodo; }
 {
   nodo=LOG_OR()
   { 
-    Expresion exp = new Expresion(nodo);
-    System.out.println(exp.resolver(new Ambito()).getValor());
     return nodo; 
   }
 }

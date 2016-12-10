@@ -1,25 +1,26 @@
 package org.esvux.sbscript.ast;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 
 /**
  *
  * @author esvux
  */
 public class Metodo {
-    
+
     private String nombre;
     private int tipo, fila, columna;
-    private List<Nodo> params;
+    private HashMap<String, Nodo> params;
     private Nodo cuerpo;
+    private boolean correcto;
 
     public Metodo(String nombre, int tipo) {
         this.nombre = nombre;
         this.tipo = tipo;
-        this.params = new ArrayList<>();
+        this.params = new HashMap<>();
         this.cuerpo = new Nodo();
-    }        
+        this.correcto = true;
+    }
 
     public String getNombre() {
         return nombre;
@@ -37,11 +38,11 @@ public class Metodo {
         this.tipo = tipo;
     }
 
-    public List<Nodo> getParams() {
+    public HashMap<String, Nodo> getParams() {
         return params;
     }
 
-    public void setParams(List<Nodo> params) {
+    public void setParams(HashMap<String, Nodo> params) {
         this.params = params;
     }
 
@@ -52,11 +53,16 @@ public class Metodo {
     public void setCuerpo(Nodo cuerpo) {
         this.cuerpo = cuerpo;
     }
-    
-    public void addParam(Nodo param){
-        this.params.add(param);
+
+    public boolean addParam(Nodo param) {
+        String p = param.getCadena();
+        if (params.containsKey(p)) {
+            return false;
+        }
+        params.put(p, param);
+        return true;
     }
-    
+
     public void setUbicacion(int fila, int columna) {
         this.fila = fila;
         this.columna = columna;
@@ -69,5 +75,13 @@ public class Metodo {
     public int getColumna() {
         return columna;
     }
-    
+
+    public void marcarComoIncorrecto() {
+        correcto = false;
+    }
+
+    public boolean esIncorrecto() {
+        return !correcto;
+    }
+
 }
