@@ -36,7 +36,7 @@ public class Contexto {
         return variables.containsKey(nombre);
     }
     
-    public void addVariable(Variable var) {
+    public void setVariable(Variable var) {
         this.variables.put(var.getNombre(), var);
     }
     
