@@ -6,7 +6,7 @@ import java.util.ArrayList;
  *
  * @author esvux
  */
-public class FabricaAST {
+public abstract class FabricaAST {
 
     public static Nodo copiar(Nodo nodo) {
         Nodo copia = new Nodo();

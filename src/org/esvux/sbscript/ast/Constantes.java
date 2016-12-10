@@ -4,7 +4,7 @@ package org.esvux.sbscript.ast;
  *
  * @author esvux
  */
-public class Constantes {
+public abstract class Constantes {
 
     public static final int ERR_LEXICO = 0;
     public static final int ERR_SINTACTICO = 1;
@@ -17,6 +17,9 @@ public class Constantes {
     public static final int T_BOOL = 2;
     public static final int T_VOID = 3;
     public static final int T_ERROR = 4;
+    public static final int T_OK = 5;
+    public static final int T_DETENER = 6;
+    public static final int T_CONTINUAR = 7;
     
     public static final int NULO = -1;
     public static final int NUMERO = 0;
@@ -75,6 +78,8 @@ public class Constantes {
         
     public static final String VAL_TRUE = "verdadero";
     public static final String VAL_FALSE = "falso";
+    public static final String VAL_OK = "Ok";
+    public static final String VAL_FAIL = "Error";
     
     //Matrices de tipos
     public static final int MT_SUMA [][] = {
