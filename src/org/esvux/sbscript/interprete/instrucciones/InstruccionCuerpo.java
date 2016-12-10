@@ -24,7 +24,7 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
         Object[] cuerpo = instruccion.getHijos().toArray();
         for (Object objNodo : cuerpo) {
             Nodo nodo = (Nodo) objNodo;
-            Resultado res = FabricaResultado.creaOK();
+            Resultado res = null;
             switch (nodo.getRol()) {
                 case Constantes.DECLARACION:
                     res = new InstruccionDeclaracion(nodo).ejecutar(ctx, nivel);
@@ -36,8 +36,7 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                     res = new InstruccionMostrar(nodo).ejecutar(ctx, nivel);
                     break;
                 case Constantes.LLAMADA:
-                    break;
-                case Constantes.RETORNO:
+                    
                     break;
                 case Constantes.SI:
                     break;
@@ -48,20 +47,29 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                     break;
                 case Constantes.PARA:
                     break;
+                case Constantes.RETORNO:
+                    res = new InstruccionRetorno(nodo).ejecutar(ctx, nivel);
+                    break;
                 case Constantes.DETENER:
-                    if (permiteInterrupciones) {
-                        return FabricaResultado.creaDetener();
-                    }
-                    //Error, 'Detener' fuera de lugar
-                    res = FabricaResultado.creaFAIL();
+                    res = FabricaResultado.creaDetener();
                     break;
                 case Constantes.CONTINUAR:
-                    if (permiteInterrupciones) {
-                        return FabricaResultado.creaContinuar();
-                    }
-                    //Error, 'Continuar' fuera de lugar
-                    res = FabricaResultado.creaFAIL();
+                    res = FabricaResultado.creaContinuar();
                     break;
+            }
+            if (res == null) {
+                //Error, instruccion fuera de control
+                continue;
+            }
+            if (res.esRetorno()) {
+                return res;
+            }
+            if (res.esDetener() || res.esContinuar()) {
+                if (permiteInterrupciones) {
+                    return res;
+                } else {
+                    //Error, detener o continuar, fuera de contexto
+                }
             }
         }
         return FabricaResultado.creaOK();
