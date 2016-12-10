@@ -3,6 +3,7 @@ package org.esvux.sbscript.interprete.expresiones;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -35,8 +36,8 @@ public class ExpresionLogica extends ExpresionAbstracta {
         if (!(tipoIzq == Constantes.T_BOOL && tipoIzq == tipoDer)) {
             return new Resultado();
         }
-        boolean blnIzq = convertirBooleano(resIzq.getValor());
-        boolean blnDer = convertirBooleano(resDer.getValor());
+        boolean blnIzq = resIzq.getBooleano();
+        boolean blnDer = resDer.getBooleano();
         switch (operando) {
             case Constantes.OPL_AND:
                 blnIzq = Boolean.logicalAnd(blnIzq, blnDer);
@@ -50,7 +51,7 @@ public class ExpresionLogica extends ExpresionAbstracta {
             default:
             //Error de operador
         }
-        return Resultado.creaBooleano(convertirBooleano(blnIzq));
+        return FabricaResultado.creaBooleano(blnIzq);
     }
 
     private Resultado resolverUnaria(Contexto ctx) {
@@ -65,9 +66,9 @@ public class ExpresionLogica extends ExpresionAbstracta {
     }
 
     private Resultado resolverNot(Resultado resIzq) {
-        boolean res = convertirBooleano(resIzq.getValor());
-        res = !res;
-        return Resultado.creaBooleano(convertirBooleano(res));
+        boolean bool = resIzq.getBooleano();
+        bool = !bool;
+        return FabricaResultado.creaBooleano(bool);
     }
 
 }

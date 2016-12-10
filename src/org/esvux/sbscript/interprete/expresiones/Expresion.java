@@ -51,8 +51,11 @@ public class Expresion extends ExpresionAbstracta {
                 res = new Resultado(var.getValor(), var.getTipo());
                 break;
             default:
-                if (izq.esDeRol(Constantes.NUMERO, Constantes.CADENA, Constantes.TRUE, Constantes.FALSE)) {
-                    res = new Resultado(izq.getCadena(), izq.getTipo());
+                String val = izq.getCadena();
+                if (izq.esDeRol(Constantes.NUMERO, Constantes.TRUE, Constantes.FALSE)) {
+                    res = new Resultado(val, izq.getTipo());
+                }else if (izq.getTipo()==Constantes.CADENA) {
+                    res = new Resultado(val.substring(1, val.length()-1), izq.getTipo());
                 }
         }
         return res;

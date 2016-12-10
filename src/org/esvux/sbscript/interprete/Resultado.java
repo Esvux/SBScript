@@ -12,24 +12,18 @@ public class Resultado {
     private int tipo;
     private boolean retorno;
 
-    public Resultado() {
-        this.valor = "";
-        this.tipo = Constantes.T_ERROR;
-        this.retorno = false;
-    }    
-    
-    public Resultado(String valor, int tipo) {
+    public Resultado(String valor, int tipo, boolean retorno) {
         this.valor = valor;
         this.tipo = tipo;
-        this.retorno = false;
+        this.retorno = retorno;
     }
 
-    public void marcarComoRetorno() {
-        this.retorno = true;
+    public Resultado(String valor, int tipo) {
+        this(valor, tipo, false);
     }
-    
-    public boolean esRetorno() {
-        return this.retorno;
+
+    public Resultado() {
+        this("", Constantes.T_ERROR, false);
     }
 
     public String getValor() {
@@ -47,21 +41,34 @@ public class Resultado {
     public void setTipo(int tipo) {
         this.tipo = tipo;
     }
-    
-    public static Resultado creaCadena(String cadena){
-        return new Resultado(cadena, Constantes.T_STR);
+
+    public double getDouble() {
+        return Double.parseDouble(valor);
     }
 
-    public static Resultado creaNumero(String cadena){
-        return new Resultado(cadena, Constantes.T_NUM);
+    public boolean getBooleano() {
+        return valor.compareTo(Constantes.VAL_TRUE) == 0;
     }
 
-    public static Resultado creaBooleano(String cadena){
-        return new Resultado(cadena, Constantes.T_BOOL);
+    public void setBooleano(boolean bool) {
+        valor = (bool) ? Constantes.VAL_TRUE : Constantes.VAL_FALSE;
     }
 
-    public static Resultado creaOK(){
-        return new Resultado("Ok", Constantes.T_VOID);
+    public boolean esContinuar() {
+        return tipo == Constantes.T_CONTINUAR;
+    }
+
+    public boolean esDetener() {
+        return tipo == Constantes.T_DETENER;
+    }
+
+    public boolean esRetorno() {
+        return retorno;
+    }
+
+    public boolean esFail() {
+        return tipo == Constantes.T_ERROR && 
+                valor.compareTo(Constantes.VAL_FAIL) == 0;
     }
 
 }

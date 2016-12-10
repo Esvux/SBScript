@@ -3,6 +3,7 @@ package org.esvux.sbscript.interprete.expresiones;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -67,14 +68,14 @@ public class ExpresionAritmetica extends ExpresionAbstracta {
         }
         //Concatenación
         if (tipo == Constantes.T_STR) {
-            return Resultado.creaCadena(resIzq.getValor().concat(resDer.getValor()));
+            return FabricaResultado.creaCadena(resIzq.getValor().concat(resDer.getValor()));
         }
         return new Resultado();
     }
 
     private Resultado resolverNumerica(Resultado resIzq, Resultado resDer) {
-        double dblIzq = Double.parseDouble(resIzq.getValor());
-        double dblDer = Double.parseDouble(resDer.getValor());
+        double dblIzq = resIzq.getDouble();
+        double dblDer = resDer.getDouble();
         switch (operando) {
             case Constantes.OPA_SUM:
                 dblIzq += dblDer;
@@ -98,18 +99,18 @@ public class ExpresionAritmetica extends ExpresionAbstracta {
                     return new Resultado();
                 }
                 int mod = (int) dblIzq % (int) dblDer;
-                return Resultado.creaNumero(String.valueOf(mod));
+                return FabricaResultado.creaNumero(String.valueOf(mod));
             case Constantes.OPA_POT:
                 dblIzq = Math.pow(dblIzq, dblDer);
                 break;
         }
-        return Resultado.creaNumero(String.valueOf(dblIzq));
+        return FabricaResultado.creaNumero(String.valueOf(dblIzq));
     }
 
     private Resultado resolverMenos(Resultado resIzq) {
-        double dblIzq = Double.parseDouble(resIzq.getValor());
+        double dblIzq = resIzq.getDouble();
         dblIzq *= -1;
-        return Resultado.creaNumero(String.valueOf(dblIzq));
+        return FabricaResultado.creaNumero(String.valueOf(dblIzq));
     }
 
 }

@@ -33,15 +33,4 @@ public abstract class ExpresionAbstracta {
         return matrizDeTipos[tipoIzq][tipoDer];
     }
 
-    protected boolean convertirBooleano(String str) {
-        if (str.compareTo(Constantes.VAL_TRUE) == 0) {
-            return true;
-        }
-        return false;
-    }
-    
-    protected String convertirBooleano(boolean bool) {
-        return (bool) ? Constantes.VAL_TRUE : Constantes.VAL_FALSE;
-    }
-
 }
