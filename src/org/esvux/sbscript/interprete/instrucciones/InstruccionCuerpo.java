@@ -3,6 +3,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
 
 /**
@@ -11,8 +12,8 @@ import org.esvux.sbscript.interprete.Resultado;
  */
 public class InstruccionCuerpo extends InstruccionAbstracta {
 
-    public InstruccionCuerpo(Nodo instruccion, boolean permiteInter) {
-        super(instruccion, permiteInter);
+    public InstruccionCuerpo(Nodo instruccion, boolean permiteInterrupciones) {
+        super(instruccion, permiteInterrupciones);
     }
 
     @Override
@@ -23,30 +24,47 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
         Object[] cuerpo = instruccion.getHijos().toArray();
         for (Object objNodo : cuerpo) {
             Nodo nodo = (Nodo) objNodo;
+            Resultado res = FabricaResultado.creaOK();
             switch (nodo.getRol()) {
                 case Constantes.DECLARACION:
+                    res = new InstruccionDeclaracion(nodo).ejecutar(ctx, nivel);
                     break;
                 case Constantes.ASIGNACION:
-                    break;
-                case Constantes.RETORNO:
+                    res = new InstruccionAsignacion(nodo).ejecutar(ctx, nivel);
                     break;
                 case Constantes.MOSTRAR:
+                    res = new InstruccionMostrar(nodo).ejecutar(ctx, nivel);
+                    break;
+                case Constantes.LLAMADA:
+                    break;
+                case Constantes.RETORNO:
                     break;
                 case Constantes.SI:
                     break;
                 case Constantes.SELECCIONA:
                     break;
                 case Constantes.MIENTRAS:
+                    res = new InstruccionMientras(nodo, true).ejecutar(ctx, nivel + 1);
                     break;
                 case Constantes.PARA:
                     break;
                 case Constantes.DETENER:
+                    if (permiteInterrupciones) {
+                        return FabricaResultado.creaDetener();
+                    }
+                    //Error, 'Detener' fuera de lugar
+                    res = FabricaResultado.creaFAIL();
                     break;
                 case Constantes.CONTINUAR:
+                    if (permiteInterrupciones) {
+                        return FabricaResultado.creaContinuar();
+                    }
+                    //Error, 'Continuar' fuera de lugar
+                    res = FabricaResultado.creaFAIL();
                     break;
             }
         }
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return FabricaResultado.creaOK();
     }
 
 }

@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.Interprete;
 import org.esvux.sbscript.interprete.Resultado;
 import org.esvux.sbscript.interprete.Variable;
 
@@ -12,31 +13,39 @@ import org.esvux.sbscript.interprete.Variable;
 public abstract class InstruccionAbstracta {
 
     protected Nodo instruccion;
-    protected boolean permiteInter;
-    protected static Contexto contextoGlobal = new Contexto();
+    protected boolean permiteInterrupciones;
 
-    InstruccionAbstracta(Nodo instruccion, boolean permiteInter) {
+    InstruccionAbstracta(Nodo instruccion, boolean permiteInterrupciones) {
         this.instruccion = instruccion;
-        this.permiteInter = permiteInter;
+        this.permiteInterrupciones = permiteInterrupciones;
     }
 
-    public static Variable obtenerVariable(Contexto ambito, String nombre) {
-        Variable var = ambito.getVariable(nombre);
+    public static Variable obtenerVariable(Contexto ctx, String nombre) {
+        Variable var = ctx.getVariable(nombre);
         if (var != null) {
             return var;
         }
-        var = contextoGlobal.getVariable(nombre);
+        var = Interprete.getContextoGlobal().getVariable(nombre);
         return var;
     }
-
-    public static void setContextoGlobal() {
-        contextoGlobal = new Contexto();
+    
+    public void setVariable(Contexto ctx, Variable var) {
+        if (ctx.existeVariable(var.getNombre())) {
+            ctx.setVariable(var);
+        }else if(Interprete.getContextoGlobal().existeVariable(var.getNombre())){
+            Interprete.getContextoGlobal().setVariable(var);
+        }
     }
     
-    public static Contexto getContextoGlobal() {
-        return contextoGlobal;
+    public boolean existeVariable(Contexto ctx, String nombre) {
+        return ctx.existeVariable(nombre) || Interprete.getContextoGlobal().existeVariable(nombre);
     }
-
+    
+    public boolean asignacionValida(int tipoDestino, int tipoFuente) {
+        //Una comprobación más extensa sería bien resuelta por una 
+        //matriz de tipos, ver resolverSuma
+        return tipoDestino == tipoFuente;
+    }
 
     public abstract Resultado ejecutar(Contexto ctx, int nivel);
 

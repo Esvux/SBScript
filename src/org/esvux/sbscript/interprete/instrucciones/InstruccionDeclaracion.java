@@ -3,6 +3,8 @@ package org.esvux.sbscript.interprete.instrucciones;
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.FabricaResultado;
+import org.esvux.sbscript.interprete.Interprete;
 import org.esvux.sbscript.interprete.Resultado;
 import org.esvux.sbscript.interprete.Variable;
 import org.esvux.sbscript.interprete.expresiones.Expresion;
@@ -13,8 +15,8 @@ import org.esvux.sbscript.interprete.expresiones.Expresion;
  */
 public class InstruccionDeclaracion extends InstruccionAbstracta {
 
-    public InstruccionDeclaracion(Nodo instruccion, boolean permiteInter) {
-        super(instruccion, permiteInter);
+    public InstruccionDeclaracion(Nodo instruccion) {
+        super(instruccion, false);
     }
 
     @Override
@@ -27,7 +29,7 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
             int tipoRes = res.getTipo();
             if (tipoRes == Constantes.T_ERROR) {
                 //Error en la expresion, las variables existiran, pero con valor null
-            } else if (tipoRes != tipo) {
+            } else if (! asignacionValida(tipo, tipoRes)) {
                 //Error de casteo en la asignacion, las variables existiran, pero con valor null
             } else {
                 valor = res.getValor();
@@ -49,15 +51,15 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
                 crearVariableLocal(ctx, var);
             }
         }
-        return Resultado.creaOK();
+        return FabricaResultado.creaOK();
     }
     
     private void crearVariableLocal(Contexto ctx, Variable nueva) {
-        ctx.addVariable(nueva);
+        ctx.setVariable(nueva);
     }
 
     private void crearVariableGlobal(Variable nueva) {
-        contextoGlobal.addVariable(nueva);
+        Interprete.getContextoGlobal().setVariable(nueva);
     }
 
     private boolean existeVariableLocal(Contexto ctx, String nombre) {
@@ -65,7 +67,7 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
     }
 
     private boolean existeVariableGlobal(String nombre) {
-        return contextoGlobal.existeVariable(nombre);
+        return Interprete.getContextoGlobal().existeVariable(nombre);
     }
 
 }
