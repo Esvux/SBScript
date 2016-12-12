@@ -501,11 +501,9 @@ Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
 *             | SELECCIONA |
 *             |____________|
 *                |     _____________
-*               (0)---| EXPRESION   |
+*               (0)---| CASO 0      |
 *                |    |_____________|
 *               (1)---| CASO 1      |
-*                |    |_____________|
-*               (2)---| CASO 2      |
 *                |    |_____________|
 *                |         . . .
 *                |     _____________
@@ -516,8 +514,8 @@ Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
 */
 Nodo SELECCIONA():{ Nodo nodo, exp, caso; Token aux; }
 {
-  aux=<PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(exp); }
-  ( caso=CASO() { nodo.addHijo(caso); } )+
+  aux=<PR_SELECCIONA> "(" exp=EXP() ")" { nodo = FabricaAST.creaSelecciona(); }
+  ( caso=CASO(exp) { nodo.addHijo(caso); } )+
   { 
     nodo.setUbicacion(aux);
     return nodo;
@@ -526,26 +524,29 @@ Nodo SELECCIONA():{ Nodo nodo, exp, caso; Token aux; }
 
 
 /**
-* Esta producción detecta la existencia de un caso, cada caso está
-* compuesto por un valor nativo y un cuerpo de instrucciones.<br><br>
+* Esta producción recibe como atributo heredado la expresión que será
+* transformada en otra expresión de rol Constantes.RELACIONAL y subrol
+* Constantes.OPR_EQU. A dicha expresión será asociado un cuerpo de 
+* instrucciones para su ejecución según lo defina el intérprete.<br><br>
 * {@code CASO ::= NATIVO ":" CUERPO}
 * <pre>
 *              __________
 *             | CASO     |
 *             |__________|
 *                |     _____________
-*               (0)---| NATIVO      |
+*               (0)---| EXPRESION*  |
 *                |    |_____________|
 *               (1)---| CUERPO      |
 *                     |_____________|
 * </pre>
+* @param exp Nodo para crear la condición del caso.
 * @return Nodo con rol Constantes.CASO.
 */
-Nodo CASO():{ Nodo valor, cuerpo; Token aux; }
+Nodo CASO(Nodo exp):{ Nodo valor, cuerpo; Token aux; }
 {
   valor=NATIVO() aux=":" cuerpo=CUERPO()
   { 
-    Nodo nodo = FabricaAST.creaCaso(valor, cuerpo); 
+    Nodo nodo = FabricaAST.creaCaso(exp, valor, cuerpo); 
     nodo.setUbicacion(aux);
     return nodo;    
   }
@@ -583,8 +584,9 @@ Nodo MIENTRAS():{ Nodo exp, cuerpo; Token aux; }
 /**
 * _____________________________________________________________
 * Esta producción detecta la existencia de un ciclo PARA, y crea
-* la siguiente estructura para el AST (el atributo cadena lleva
-* el valor 'para++' o 'para--' según lo dicta la entrada).<br><br>
+* la siguiente estructura para el AST (el atributo subrol lleva
+* el valor Constantes.INCREMENTO o Constantes.DECREMENTO según 
+* lo dicta la entrada de dicho ciclo).<br><br>
 * {@code PARA ::= "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO}
 * <pre>
 *              __________
@@ -596,6 +598,8 @@ Nodo MIENTRAS():{ Nodo exp, cuerpo; Token aux; }
 *               (1)---| CONDICION   |
 *                |    |_____________|
 *               (2)---| CUERPO      |
+*                |    |_____________|
+*               (3)---| ASIGNACION  |
 *                     |_____________|
 * </pre>
 * @return Nodo con rol Constantes.PARA.
@@ -614,7 +618,7 @@ Nodo PARA():{ Nodo dec, exp, cond, cuerpo; Token id, aux; int tipo, subrol; }
   ")"
   cuerpo=CUERPO()
   { 
-    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, subrol); 
+    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, id.image, subrol); 
     nodo.setUbicacion(aux);
     return nodo;
   }

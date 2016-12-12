@@ -674,11 +674,9 @@ public class ParserSBScript implements ParserSBScriptConstants {
 *             | SELECCIONA |
 *             |____________|
 *                |     _____________
-*               (0)---| EXPRESION   |
+*               (0)---| CASO 0      |
 *                |    |_____________|
 *               (1)---| CASO 1      |
-*                |    |_____________|
-*               (2)---| CASO 2      |
 *                |    |_____________|
 *                |         . . .
 *                |     _____________
@@ -693,11 +691,11 @@ public class ParserSBScript implements ParserSBScriptConstants {
     jj_consume_token(1);
     exp = EXP();
     jj_consume_token(2);
-                                          nodo = FabricaAST.creaSelecciona(exp);
+                                          nodo = FabricaAST.creaSelecciona();
     label_8:
     while (true) {
-      caso = CASO();
-                  nodo.addHijo(caso);
+      caso = CASO(exp);
+                     nodo.addHijo(caso);
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TRUE:
       case FALSE:
@@ -716,27 +714,30 @@ public class ParserSBScript implements ParserSBScriptConstants {
   }
 
 /**
-* Esta producción detecta la existencia de un caso, cada caso está
-* compuesto por un valor nativo y un cuerpo de instrucciones.<br><br>
+* Esta producción recibe como atributo heredado la expresión que será
+* transformada en otra expresión de rol Constantes.RELACIONAL y subrol
+* Constantes.OPR_EQU. A dicha expresión será asociado un cuerpo de 
+* instrucciones para su ejecución según lo defina el intérprete.<br><br>
 * {@code CASO ::= NATIVO ":" CUERPO}
 * <pre>
 *              __________
 *             | CASO     |
 *             |__________|
 *                |     _____________
-*               (0)---| NATIVO      |
+*               (0)---| EXPRESION*  |
 *                |    |_____________|
 *               (1)---| CUERPO      |
 *                     |_____________|
 * </pre>
+* @param exp Nodo para crear la condición del caso.
 * @return Nodo con rol Constantes.CASO.
 */
-  final public Nodo CASO() throws ParseException {
-              Nodo valor, cuerpo; Token aux;
+  final public Nodo CASO(Nodo exp) throws ParseException {
+                      Nodo valor, cuerpo; Token aux;
     valor = NATIVO();
     aux = jj_consume_token(7);
     cuerpo = CUERPO();
-    Nodo nodo = FabricaAST.creaCaso(valor, cuerpo);
+    Nodo nodo = FabricaAST.creaCaso(exp, valor, cuerpo);
     nodo.setUbicacion(aux);
     {if (true) return nodo;}
     throw new Error("Missing return statement in function");
@@ -774,8 +775,9 @@ public class ParserSBScript implements ParserSBScriptConstants {
 /**
 * _____________________________________________________________
 * Esta producción detecta la existencia de un ciclo PARA, y crea
-* la siguiente estructura para el AST (el atributo cadena lleva
-* el valor 'para++' o 'para--' según lo dicta la entrada).<br><br>
+* la siguiente estructura para el AST (el atributo subrol lleva
+* el valor Constantes.INCREMENTO o Constantes.DECREMENTO según 
+* lo dicta la entrada de dicho ciclo).<br><br>
 * {@code PARA ::= "Para" "(" TIPO_VAR id "=" EXP ";" EXP ";" ("++" | "--") ")" CUERPO}
 * <pre>
 *              __________
@@ -787,6 +789,8 @@ public class ParserSBScript implements ParserSBScriptConstants {
 *               (1)---| CONDICION   |
 *                |    |_____________|
 *               (2)---| CUERPO      |
+*                |    |_____________|
+*               (3)---| ASIGNACION  |
 *                     |_____________|
 * </pre>
 * @return Nodo con rol Constantes.PARA.
@@ -820,7 +824,7 @@ public class ParserSBScript implements ParserSBScriptConstants {
     }
     jj_consume_token(2);
     cuerpo = CUERPO();
-    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, subrol);
+    Nodo nodo = FabricaAST.creaPara(dec, cond, cuerpo, id.image, subrol);
     nodo.setUbicacion(aux);
     {if (true) return nodo;}
     throw new Error("Missing return statement in function");
