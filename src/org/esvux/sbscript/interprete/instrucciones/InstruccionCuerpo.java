@@ -36,7 +36,7 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                     res = new InstruccionMostrar(nodo).ejecutar(ctx, nivel);
                     break;
                 case Constantes.LLAMADA:
-                    
+                    res = new InstruccionLlamada(nodo).ejecutar(ctx, 1);
                     break;
                 case Constantes.SI:
                     res = new InstruccionSi(nodo, permiteInterrupciones).ejecutar(ctx, nivel + 1);
