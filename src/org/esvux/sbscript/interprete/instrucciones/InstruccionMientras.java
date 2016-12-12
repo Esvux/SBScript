@@ -19,10 +19,9 @@ public class InstruccionMientras extends InstruccionAbstracta {
 
     @Override
     public Resultado ejecutar(Contexto ctx, int nivel) {
-        Nodo nodoCondicion = instruccion.getHijo(0);
-        Nodo nodoCuerpo = instruccion.getHijo(1);
-        Resultado res = FabricaResultado.creaOK();
+        Resultado ejecucion = null;
         while (true) {
+            Nodo nodoCondicion = instruccion.getHijo(0);
             Resultado condicion = new Expresion(nodoCondicion).resolver(ctx);
             if(condicion.getTipo()!=Constantes.T_BOOL){
                 //Error, no es una condición válida
@@ -32,21 +31,22 @@ public class InstruccionMientras extends InstruccionAbstracta {
             if(!cumpleCondicion){
                 //Termina el ciclo y limpia el contexto de todas las variables 
                 //declaradas en el cuerpo de la instrucción Mientras
-                res = FabricaResultado.creaOK();
+                ejecucion = FabricaResultado.creaOK();
                 break;
             }
+            Nodo nodoCuerpo = instruccion.getHijo(1);
             InstruccionCuerpo instr = new InstruccionCuerpo(nodoCuerpo, true);
-            res = instr.ejecutar(ctx, nivel + 1);
-            if(res.esRetorno())
+            ejecucion = instr.ejecutar(ctx, nivel);
+            if(ejecucion.esRetorno())
                 break;
-            if(res.esDetener()){
-                res = FabricaResultado.creaOK();
+            if(ejecucion.esDetener()){
+                ejecucion = FabricaResultado.creaOK();
                 break;
             }
             ctx.limpiarContexto(nivel);
         }
         ctx.limpiarContexto(nivel);
-        return res;
+        return ejecucion;
     }
 
 }
