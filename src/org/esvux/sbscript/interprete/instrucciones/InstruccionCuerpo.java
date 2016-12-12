@@ -39,13 +39,16 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                     
                     break;
                 case Constantes.SI:
+                    res = new InstruccionSi(nodo, permiteInterrupciones).ejecutar(ctx, nivel + 1);
                     break;
                 case Constantes.SELECCIONA:
+                    res = new InstruccionSelecciona(nodo, true).ejecutar(ctx, nivel + 1);
                     break;
                 case Constantes.MIENTRAS:
                     res = new InstruccionMientras(nodo, true).ejecutar(ctx, nivel + 1);
                     break;
                 case Constantes.PARA:
+                    res = new InstruccionPara(nodo, true).ejecutar(ctx, nivel + 1);
                     break;
                 case Constantes.RETORNO:
                     res = new InstruccionRetorno(nodo).ejecutar(ctx, nivel);
