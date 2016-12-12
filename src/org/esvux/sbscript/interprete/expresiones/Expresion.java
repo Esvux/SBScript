@@ -6,6 +6,7 @@ import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 import org.esvux.sbscript.interprete.Variable;
 import org.esvux.sbscript.interprete.instrucciones.InstruccionAbstracta;
+import org.esvux.sbscript.interprete.instrucciones.InstruccionLlamada;
 
 /**
  *
@@ -37,6 +38,9 @@ public class Expresion extends ExpresionAbstracta {
                 break;
             case Constantes.RELACIONAL:
                 res = new ExpresionRelacional(izq.getHijo(0), izq.getHijo(1), subrol).resolver(ctx);
+                break;
+            case Constantes.LLAMADA:
+                res = new InstruccionLlamada(izq).ejecutar(ctx, 1);
                 break;
             case Constantes.VARIABLE:
                 Variable var = InstruccionAbstracta.obtenerVariable(ctx, izq.getCadena());
