@@ -129,15 +129,15 @@ public abstract class FabricaAST {
         return nodo;
     }
 
-    public static Nodo creaSelecciona(Nodo exp) {
+    public static Nodo creaSelecciona() {
         Nodo nodo = new Nodo(Constantes.SELECCIONA, "Selecciona");
-        nodo.addHijo(exp);
         return nodo;
     }
 
-    public static Nodo creaCaso(Nodo val, Nodo cuerpo) {
+    public static Nodo creaCaso(Nodo exp, Nodo val, Nodo cuerpo) {
         Nodo nodo = new Nodo(Constantes.CASO, "Caso");
-        nodo.addHijo(val);
+        Nodo cond = creaRelacional("==", Constantes.OPR_EQU, exp, val);
+        nodo.addHijo(cond);
         nodo.addHijo(cuerpo);
         return nodo;
     }
@@ -149,15 +149,22 @@ public abstract class FabricaAST {
         return nodo;
     }
 
-    public static Nodo creaPara(Nodo dec, Nodo cond, Nodo cuerpo, int subrol) {
+    public static Nodo creaPara(Nodo dec, Nodo cond, Nodo cuerpo, String id, int subrol) {
         Nodo nodo = new Nodo(Constantes.PARA, "Para");
         nodo.setSubrol(subrol);
         nodo.addHijo(dec);
         nodo.addHijo(cond);
         nodo.addHijo(cuerpo);
+        Nodo exp;
+        if (subrol == Constantes.INCREMENTO) {
+            exp = creaAritmetica("+", Constantes.OPA_SUM, creaAccesoID(id), creaNumero("1"));
+        } else {
+            exp = creaAritmetica("-", Constantes.OPA_RES, creaAccesoID(id), creaNumero("1"));
+        }
+        nodo.addHijo(creaAsignacion(id, exp));
         return nodo;
     }
-    
+
     public static Nodo creaDetener() {
         Nodo nodo = new Nodo(Constantes.DETENER, "Detener");
         return nodo;
