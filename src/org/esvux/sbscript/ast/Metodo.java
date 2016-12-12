@@ -1,5 +1,6 @@
 package org.esvux.sbscript.ast;
 
+import java.util.Collection;
 import java.util.HashMap;
 
 /**
@@ -82,6 +83,14 @@ public class Metodo {
 
     public boolean esIncorrecto() {
         return !correcto;
+    }
+    
+    public int getCantidadParametros(){
+        return this.params.size();
+    }
+    
+    public Collection<Nodo> getParametros(){
+        return this.params.values();
     }
 
 }

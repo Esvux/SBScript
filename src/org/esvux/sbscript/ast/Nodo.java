@@ -127,5 +127,17 @@ public class Nodo {
         this.linea = tok.beginLine;
         this.columna = tok.beginColumn;
     }
+    
+    public int getCantidadHijos(){
+        return this.hijos.size();
+    }
 
+    public int getLinea() {
+        return linea;
+    }
+
+    public int getColumna() {
+        return columna;
+    }
+    
 }

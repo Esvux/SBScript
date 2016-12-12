@@ -21,6 +21,23 @@ public abstract class FabricaAST {
         return copia;
     }
 
+    public static Nodo creaHoja(String valor, int tipo) {
+        switch (tipo) {
+            case Constantes.T_NUM:
+                return creaNumero(valor);
+            case Constantes.T_STR:
+                return creaCadena(valor);
+            case Constantes.T_BOOL:
+                if (valor.compareTo(Constantes.VAL_TRUE) == 0) {
+                    return creaTrue();
+                }
+                if (valor.compareTo(Constantes.VAL_FALSE) == 0) {
+                    return creaFalse();
+                }
+        }
+        return new Nodo();
+    }
+
     public static Nodo creaNumero(String numero) {
         Nodo nodo = new Nodo(Constantes.NUMERO, Constantes.T_NUM, numero);
         return nodo;

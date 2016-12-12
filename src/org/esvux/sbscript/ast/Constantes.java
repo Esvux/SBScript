@@ -17,9 +17,8 @@ public abstract class Constantes {
     public static final int T_BOOL = 2;
     public static final int T_VOID = 3;
     public static final int T_ERROR = 4;
-    public static final int T_OK = 5;
-    public static final int T_DETENER = 6;
-    public static final int T_CONTINUAR = 7;
+    public static final int T_DETENER = 5;
+    public static final int T_CONTINUAR = 6;
     
     public static final int NULO = -1;
     public static final int NUMERO = 0;
