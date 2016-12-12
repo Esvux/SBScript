@@ -20,19 +20,32 @@ public class Interprete {
     
     public static void main(String[] args) {
         Interprete i = new Interprete(
-                "Num a,b = 10;"
-              + "Principal(){"
-              + "   Num a = b / 3;"
-              + "   Mostrar(\"b\", \"=\", b);"
-              + "   Num i = 0;"
-              + "   Mientras(a < b){"
-              + "       Mostrar(\"Iteración:\",i);"
-              + "       Mostrar(\"a =\",a);"
-              + "       a = a * 1.2;"
-              + "       i = i + 1;"
-              + "   }"
-              + "   Mostrar(\"Valor final de 'a':\",a);"
-              + "}"
+                "Num a,b = 10;\n"
+              + "Principal(){\n"
+              + "   Num a = b / 3;\n"
+              + "   Mostrar(\"b\", \"=\", b);\n"
+              + "   Num i = 0;\n"
+              + "   Mientras(a < b){\n"
+              + "       Mostrar(\"Iteración:\",i);\n"
+              + "       Mostrar(\"a =\",a);\n"
+              + "       a = a * 1.2;\n"
+              + "       i = i + 1;\n"
+              + "   }\n"
+              + "   i=9;\n"
+              + "   Selecciona(i)\n"
+              + "       9:{ Mostrar(\"nueve...\"); }\n"
+              + "       10:{ Mostrar(\"diez...\"); Detener; }\n"
+              + "       11:{ Mostrar(\"once...\"); Detener; }\n"
+              + "       12:{ Mostrar(\"doce...\"); }\n"
+              + "   \n"
+              + "   Para(Num j = 20; j > 13; --){\n"
+              + "       Si(j%2==0){\n"
+              + "           Continuar;\n"
+              + "       }\n"
+              + "       Mostrar(\"j vale\", j);\n"
+              + "   }\n"
+              + "   Mostrar(\"Valor final de 'a':\",a);\n"
+              + "}\n"
         );
         i.analizar();
         i.ejecutar();
@@ -64,12 +77,12 @@ public class Interprete {
             instr.ejecutar(local, Constantes.GLOBAL);
         }
         System.out.println("Contexto global creado correctamente.");
-        Metodo principal = Interprete.principal;
-        if(principal == null) {
+        Metodo main = Interprete.principal;
+        if(main == null) {
             Errores.getInstance().nuevoError("No se definió el método principal, nada por ejecutar.");
             return;
         }
-        InstruccionCuerpo instr = new InstruccionCuerpo(principal.getCuerpo(), false);
+        InstruccionCuerpo instr = new InstruccionCuerpo(main.getCuerpo(), false);
         instr.ejecutar(local, Constantes.GLOBAL + 1);
         System.out.println("Ejecución finalizada.\n");
         System.out.println("Salida:");
