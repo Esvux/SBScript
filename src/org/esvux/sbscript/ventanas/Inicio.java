@@ -50,11 +50,11 @@ public class Inicio extends javax.swing.JFrame {
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
-        jSplitPane_Principal.setDividerLocation(500);
+        jSplitPane_Principal.setDividerLocation(580);
+        jSplitPane_Principal.setDividerSize(10);
 
         jTextPane_Programa.setFont(new java.awt.Font("Andale Mono", 0, 14)); // NOI18N
-        jTextPane_Programa.setText("Principal(){\n\tMostrar(\"Hola\", \"Mundo\");\n}");
-        jTextPane_Programa.setCaretPosition(0);
+        jTextPane_Programa.setText("Num a,b = 10;\n\nPrincipal(){\n   Mostrar(\"El resultado de sumar 5 + 18 es:\", Sumar(5, 18));\n   Mostrar(\"El factorial de 5 es:\", Factorial(5));\n}\n\nNum Sumar(Num a, Num b){\n   Retorno a + b;\n}\n\nNum Factorial(Num a){\n   Si(a <= 0){\n       Retorno 1;\n   }SiNo{\n       Retorno Factorial(a - 1) * a;\n   }\n}\n\nVoid Pruebas(){\n   Num a = b / 3;\n   Mostrar(\"b\", \"=\", b);\n   Num i = 0;\n   Mientras(a < b){\n       Mostrar(\"Iteración:\",i);\n       Mostrar(\"a =\",a);\n       a = a * 1.2;\n       i = i + 1;\n   }\n   i=9;\n   Selecciona(i)\n       9:{ Mostrar(\"nueve...\"); }\n       10:{ Mostrar(\"diez...\"); Detener; }\n       11:{ Mostrar(\"once...\"); Detener; }\n       12:{ Mostrar(\"doce...\"); }   \n   Para(Num j = 20; j > 13; --){\n       Si(j%2==0){\n           Continuar;\n       }\n       Mostrar(\"j vale\", j);\n   }\n   Mostrar(\"Valor final de 'a':\",a);\n}\n");
         jTextPane_Programa.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 jTextPane_ProgramaKeyReleased(evt);
@@ -68,6 +68,7 @@ public class Inicio extends javax.swing.JFrame {
 
         jTextArea1.setEditable(false);
         jTextArea1.setColumns(20);
+        jTextArea1.setFont(new java.awt.Font("Courier New", 0, 12)); // NOI18N
         jTextArea1.setRows(5);
         jTextArea1.setBorder(null);
         jScrollPane1.setViewportView(jTextArea1);
@@ -76,10 +77,7 @@ public class Inicio extends javax.swing.JFrame {
 
         jTable1.setModel(new javax.swing.table.DefaultTableModel(
             new Object [][] {
-                {null, null},
-                {null, null},
-                {null, null},
-                {null, null}
+
             },
             new String [] {
                 "Descripción", "Lin : Col"
@@ -132,6 +130,7 @@ public class Inicio extends javax.swing.JFrame {
             Interprete i = new Interprete(this.jTextPane_Programa.getText());
             i.analizar();
             i.ejecutar();
+            mostrarSalida(i.getSalida());
             mostrarErrores();
         }
     }//GEN-LAST:event_jTextPane_ProgramaKeyReleased
@@ -154,8 +153,15 @@ public class Inicio extends javax.swing.JFrame {
         String data[][] = errs.getReporteErrores();
         DefaultTableModel dtm = new DefaultTableModel(data, encabezado);
         this.jTable1.setModel(dtm);
-        if(errs.cuentaErrores()>0)
+        if (errs.cuentaErrores() > 0) {
             jTabbedPane1.setSelectedIndex(1);
+        } else {
+            jTabbedPane1.setSelectedIndex(0);
+        }
+    }
+    
+    private void mostrarSalida(String salida){
+        jTextArea1.setText(salida);
     }
 
 }
