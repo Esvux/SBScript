@@ -1020,7 +1020,7 @@ TOKEN:{
   | < PR_MOSTRAR : "Mostrar" >
   | < PR_RETORNO : "Retorno" >
   | < PR_SI : "Si" >
-  | < PR_SINO : "Sino" >
+  | < PR_SINO : "SiNo" >
   | < PR_SELECCIONA : "Selecciona" >
   | < PR_MIENTRAS : "Mientras" >
   | < PR_DETENER : "Detener" >

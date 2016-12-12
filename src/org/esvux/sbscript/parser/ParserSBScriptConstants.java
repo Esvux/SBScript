@@ -105,7 +105,7 @@ public interface ParserSBScriptConstants {
     "\"Mostrar\"",
     "\"Retorno\"",
     "\"Si\"",
-    "\"Sino\"",
+    "\"SiNo\"",
     "\"Selecciona\"",
     "\"Mientras\"",
     "\"Detener\"",
