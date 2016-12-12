@@ -9,7 +9,7 @@ import org.esvux.sbscript.ast.Constantes;
 public abstract class FabricaResultado {
 
     public static Resultado creaOK() {
-        return new Resultado(Constantes.VAL_OK, Constantes.T_OK);
+        return new Resultado(Constantes.VAL_OK, Constantes.T_VOID);
     }
 
     public static Resultado creaFAIL() {

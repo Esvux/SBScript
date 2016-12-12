@@ -66,9 +66,18 @@ public class Resultado {
         return retorno;
     }
 
+    public boolean esError() {
+        return tipo == Constantes.T_ERROR;
+    }
+    
     public boolean esFail() {
         return tipo == Constantes.T_ERROR && 
                 valor.compareTo(Constantes.VAL_FAIL) == 0;
+    }
+
+    public boolean esOk() {
+        return tipo == Constantes.T_VOID && 
+                valor.compareTo(Constantes.VAL_OK) == 0;
     }
 
 }
