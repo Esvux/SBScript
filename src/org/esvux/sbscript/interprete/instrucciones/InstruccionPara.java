@@ -1,8 +1,11 @@
 package org.esvux.sbscript.interprete.instrucciones;
 
+import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.interprete.Contexto;
+import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
+import org.esvux.sbscript.interprete.expresiones.Expresion;
 
 /**
  *
@@ -16,7 +19,38 @@ public class InstruccionPara extends InstruccionAbstracta {
 
     @Override
     public Resultado ejecutar(Contexto ctx, int nivel) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Nodo nodoDeclara = instruccion.getHijo(0);
+        new InstruccionDeclaracion(nodoDeclara).ejecutar(ctx, nivel);
+        Resultado ejecucion = null;
+        while(true){
+            Nodo nodoCondicion = instruccion.getHijo(1);
+            Resultado condicion = new Expresion(nodoCondicion).resolver(ctx);
+            if(condicion.getTipo()!=Constantes.T_BOOL){
+                //Error, la condicion debe devolver un valor booleano
+                return FabricaResultado.creaFAIL();
+            }
+            boolean cumpleCond = condicion.getBooleano();
+            if(!cumpleCond){
+                //Sale del ciclo
+                ejecucion = FabricaResultado.creaOK();
+                break;
+            }
+            Nodo nodoCuerpo = instruccion.getHijo(2);
+            InstruccionCuerpo instr = new InstruccionCuerpo(nodoCuerpo, true);
+            ejecucion = instr.ejecutar(ctx, nivel + 1);
+            if(ejecucion.esRetorno())
+                break;
+            if(ejecucion.esDetener()){
+                ejecucion = FabricaResultado.creaOK();
+                break;
+            }
+            Nodo nodoCambio = instruccion.getHijo(3);
+            new InstruccionAsignacion(nodoCambio).ejecutar(ctx, nivel);
+            ctx.limpiarContexto(nivel + 1);
+        }
+        ctx.limpiarContexto(nivel + 1);
+        ctx.limpiarContexto(nivel);
+        return ejecucion;
     }
     
 }
