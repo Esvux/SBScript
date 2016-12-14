@@ -1,7 +1,7 @@
 package org.esvux.sbscript.ast;
 
 /**
- *
+ * Clase que agrupa todos los valores constantes como tipos, roles, subroles, etc.
  * @author esvux
  */
 public abstract class Constantes {

@@ -145,7 +145,7 @@ public class Interprete {
             Interprete.principal = principal;
         } else {
             Errores.getInstance().nuevoErrorSemantico(
-                    principal.getFila(), principal.getColumna(),
+                    principal.getLinea(), principal.getColumna(),
                     "No es posible definir más de un método principal en un mismo script.");
         }
     }
@@ -158,13 +158,13 @@ public class Interprete {
         String nom = metodo.getNombre();
         if (metodo.esIncorrecto()) {
             Errores.getInstance().nuevoErrorSemantico(
-                    metodo.getFila(), metodo.getColumna(),
+                    metodo.getLinea(), metodo.getColumna(),
                     "No es posible definir el metodo '"+nom+"', existen errores en sus parametros.");
             return;
         }
         if (metodos.containsKey(nom)) {
             Errores.getInstance().nuevoErrorSemantico(
-                    metodo.getFila(), metodo.getColumna(),
+                    metodo.getLinea(), metodo.getColumna(),
                     "Un método con el nombre '"+nom+"' ha sido definido previamente.");
             return;
         }
