@@ -20,6 +20,8 @@ public abstract class InstruccionAbstracta {
         this.permiteInterrupciones = permiteInterrupciones;
     }
 
+    public abstract Resultado ejecutar(Contexto ctx, int nivel);
+
     public static Variable obtenerVariable(Contexto ctx, String nombre) {
         Variable var = ctx.getVariable(nombre);
         if (var != null) {
@@ -46,7 +48,5 @@ public abstract class InstruccionAbstracta {
         //matriz de tipos, ver resolverSuma
         return tipoDestino == tipoFuente;
     }
-
-    public abstract Resultado ejecutar(Contexto ctx, int nivel);
 
 }

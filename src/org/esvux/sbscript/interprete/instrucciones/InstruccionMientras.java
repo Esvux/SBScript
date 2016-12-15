@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -23,12 +24,13 @@ public class InstruccionMientras extends InstruccionAbstracta {
         while (true) {
             Nodo nodoCondicion = instruccion.getHijo(0);
             Resultado condicion = new Expresion(nodoCondicion).resolver(ctx);
-            if(condicion.getTipo()!=Constantes.T_BOOL){
-                //Error, no es una condición válida
+            if (condicion.getTipo() != Constantes.T_BOOL) {
+                Errores.getInstance().nuevoErrorSemantico(nodoCondicion.getLinea(), nodoCondicion.getColumna(),
+                        "La condicion de la instruccion MIENTRAS no es una condicion valida.");
                 return FabricaResultado.creaFAIL();
             }
             boolean cumpleCondicion = condicion.getBooleano();
-            if(!cumpleCondicion){
+            if (!cumpleCondicion) {
                 //Termina el ciclo y limpia el contexto de todas las variables 
                 //declaradas en el cuerpo de la instrucción Mientras
                 ejecucion = FabricaResultado.creaOK();
@@ -37,9 +39,10 @@ public class InstruccionMientras extends InstruccionAbstracta {
             Nodo nodoCuerpo = instruccion.getHijo(1);
             InstruccionCuerpo instr = new InstruccionCuerpo(nodoCuerpo, true);
             ejecucion = instr.ejecutar(ctx, nivel);
-            if(ejecucion.esRetorno())
+            if (ejecucion.esRetorno()) {
                 break;
-            if(ejecucion.esDetener()){
+            }
+            if (ejecucion.esDetener()) {
                 ejecucion = FabricaResultado.creaOK();
                 break;
             }

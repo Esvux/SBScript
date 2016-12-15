@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -49,7 +50,9 @@ public class ExpresionLogica extends ExpresionAbstracta {
                 blnIzq = Boolean.logicalXor(blnIzq, blnDer);
                 break;
             default:
-            //Error de operador
+                Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(),
+                        "Operador fuera de control.");
+
         }
         return FabricaResultado.creaBooleano(blnIzq);
     }

@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -22,7 +23,8 @@ public class InstruccionSi extends InstruccionAbstracta {
         Nodo nodoCondicion = instruccion.getHijo(0);
         Resultado condicion = new Expresion(nodoCondicion).resolver(ctx);
         if (condicion.getTipo() != Constantes.T_BOOL) {
-            //Error, no es una condición válida
+            Errores.getInstance().nuevoErrorSemantico(nodoCondicion.getLinea(), nodoCondicion.getColumna(),
+                    "La condicion de la instruccion SI no es una condicion valida.");
             return FabricaResultado.creaFAIL();
         }
         Resultado res = FabricaResultado.creaOK();

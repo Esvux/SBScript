@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.Resultado;
 import org.esvux.sbscript.interprete.Variable;
@@ -43,13 +44,16 @@ public class Expresion extends ExpresionAbstracta {
                 res = new InstruccionLlamada(izq).ejecutar(ctx, 1);
                 break;
             case Constantes.VARIABLE:
-                Variable var = InstruccionAbstracta.obtenerVariable(ctx, izq.getCadena());
+                String nombre = izq.getCadena();
+                Variable var = InstruccionAbstracta.obtenerVariable(ctx, nombre);
                 if(var==null){
-                    //Reportar error, la variable no existe
+                    Errores.getInstance().nuevoErrorSemantico(izq.getLinea(), izq.getColumna(),
+                        "La variable '" + nombre + "' no existe.");
                     return new Resultado();
                 }
                 if(var.getValor()==null){
-                    //Reportar error, variable sin valor asignado
+                    Errores.getInstance().nuevoErrorSemantico(izq.getLinea(), izq.getColumna(),
+                        "La variable '" + nombre + "' no tiene ningun valor asignado.");
                     return new Resultado();
                 }
                 res = new Resultado(var.getValor(), var.getTipo());

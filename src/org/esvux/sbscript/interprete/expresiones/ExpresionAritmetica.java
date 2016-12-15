@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.expresiones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -88,14 +89,16 @@ public class ExpresionAritmetica extends ExpresionAbstracta {
                 break;
             case Constantes.OPA_DIV:
                 if (dblDer == 0) {
-                    //Reportar error, división entre cero
+                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(), 
+                    "No es posible realizar una division entre 0.");
                     return new Resultado();
                 }
                 dblIzq /= dblDer;
                 break;
             case Constantes.OPA_MOD:
                 if (dblDer == 0) {
-                    //Reportar error, módulo entre cero
+                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(), 
+                    "No es posible realizar una operacion de modulo entre 0.");
                     return new Resultado();
                 }
                 int mod = (int) dblIzq % (int) dblDer;

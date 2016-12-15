@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -26,7 +27,8 @@ public class InstruccionPara extends InstruccionAbstracta {
             Nodo nodoCondicion = instruccion.getHijo(1);
             Resultado condicion = new Expresion(nodoCondicion).resolver(ctx);
             if(condicion.getTipo()!=Constantes.T_BOOL){
-                //Error, la condicion debe devolver un valor booleano
+                Errores.getInstance().nuevoErrorSemantico(nodoCondicion.getLinea(), nodoCondicion.getColumna(),
+                        "La condicion de la instruccion PARA no es una condicion valida.");
                 return FabricaResultado.creaFAIL();
             }
             boolean cumpleCond = condicion.getBooleano();

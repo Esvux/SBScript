@@ -7,25 +7,23 @@ import org.esvux.sbscript.ast.Constantes;
  * @author esvux
  */
 class SBError {
-    int fila;
+
+    int linea;
     int columna;
     int tipo;
     String descripcion;
 
-    public SBError(int fila, int columna, int tipo, String descripcion) {
-        this.fila = fila;
+    public SBError(int linea, int columna, int tipo, String descripcion) {
+        this.linea = linea;
         this.columna = columna;
         this.tipo = tipo;
         this.descripcion = descripcion;
     }
-    
-    public String[] detalle() {
-        String detalle[] = 
-        {
-            Constantes.ERRORES[tipo] + ": " + descripcion,
-            (fila < 0) ? "Sin ubicación" : "Fila: "+fila + "  Columna: " + columna 
-        };
-        return detalle;
+
+    @Override
+    public String toString() {
+        String ubicacion = (linea < 0 || columna < 0) ? "[sin ubicacion]" : ("[" + linea + ":" + columna + "]");
+        return Constantes.ERRORES[tipo] + ubicacion + " - " + descripcion;
     }
-    
+
 }

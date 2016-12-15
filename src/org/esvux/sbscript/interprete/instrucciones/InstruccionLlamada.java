@@ -5,6 +5,7 @@ import java.util.List;
 import org.esvux.sbscript.ast.FabricaAST;
 import org.esvux.sbscript.ast.Metodo;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Interprete;
@@ -26,12 +27,14 @@ public class InstruccionLlamada extends InstruccionAbstracta {
         String nombre = instruccion.getCadena();
         Metodo metodo = Interprete.getMetodo(nombre);
         if (metodo == null) {
-            //Error, El metodo 'nombre' no ha sido definido.
+            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                    "El metodo '" + nombre + "' no ha sido definido.");
             return FabricaResultado.creaFAIL();
         }
         int cantParametros = instruccion.getCantidadHijos();
         if (metodo.getCantidadParametros() != cantParametros) {
-            //Error, La cantidad de parametros no coincide.
+            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                    "La cantidad de parametros de la llamada al metodo '" + nombre + "' no coincide con la declaracion.");
             return FabricaResultado.creaFAIL();
         }
         List<Nodo> parametros = new ArrayList<>(metodo.getParametros());
@@ -41,11 +44,13 @@ public class InstruccionLlamada extends InstruccionAbstracta {
             Resultado valor = new Expresion(nodoValor).resolver(ctx);
             Nodo nodoParam = parametros.get(i);
             if (valor.esError()) {
-                //Error, No se puede evaluar la expresion para el parametro 'nodoParam.getNombre()'
+                Errores.getInstance().nuevoErrorSemantico(nodoValor.getLinea(), nodoValor.getColumna(),
+                        "En la llamada al metodo '" + nombre + "' no se puede evaluar la expresion para el parametro '" + nodoParam.getCadena() + "'.");
                 return FabricaResultado.creaFAIL();
             }
             if (valor.getTipo() != nodoParam.getTipo()) {
-                //Error, No coinciden los tipos en la evaluacion del parametro 'nodoParam.getNombre()'
+                Errores.getInstance().nuevoErrorSemantico(nodoValor.getLinea(), nodoValor.getColumna(),
+                        "En la llamada al metodo '" + nombre + "' no coincide el tipo del parametro '" + nodoParam.getCadena() + "' con su valor.");
                 return FabricaResultado.creaFAIL();
             }
             nodoValor = FabricaAST.creaHoja(valor.getValor(), valor.getTipo());
@@ -55,7 +60,8 @@ public class InstruccionLlamada extends InstruccionAbstracta {
         InstruccionCuerpo instr = new InstruccionCuerpo(metodo.getCuerpo(), false);
         Resultado ejecucion = instr.ejecutar(local, nivel);
         if (ejecucion.getTipo() != metodo.getTipo()) {
-            //Error, El tipo del metodo no coincide con el tipo retornado
+            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                    "En la llamada al metodo '" + nombre + "' no coincide el tipo del retorno, con el tipo del metodo.");
             return FabricaResultado.creaFAIL();
         }
         return ejecucion;

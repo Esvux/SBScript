@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Interprete;
@@ -28,9 +29,11 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
             Resultado res = new Expresion(nodoExp).resolver(ctx);
             int tipoRes = res.getTipo();
             if (tipoRes == Constantes.T_ERROR) {
-                //Error en la expresion, las variables existiran, pero con valor null
-            } else if (! asignacionValida(tipo, tipoRes)) {
-                //Error de casteo en la asignacion, las variables existiran, pero con valor null
+                Errores.getInstance().nuevoErrorSemantico(nodoExp.getLinea(), nodoExp.getColumna(),
+                        "La evaluacion de la expresion presenta errores, las variables existiran pero con valor nulo.");
+            } else if (!asignacionValida(tipo, tipoRes)) {
+                Errores.getInstance().nuevoErrorSemantico(nodoExp.getLinea(), nodoExp.getColumna(),
+                        "El casteo de la asignacion presenta errores, las variables existiran pero con valor nulo.");
             } else {
                 valor = res.getValor();
             }
@@ -38,22 +41,24 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
         for (String nombre : instruccion.getListaAux()) {
             Variable var = new Variable(nombre, valor, tipo, nivel);
             if (nivel == Constantes.GLOBAL) {
-                if(existeVariableGlobal(nombre)){
-                    //Reportar error, redefiniendo una variable global
+                if (existeVariableGlobal(nombre)) {
+                    Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                            "Imposible redefinir la variable global '" + nombre + "'.");
                     continue;
                 }
                 crearVariableGlobal(var);
-            }else{
-                if(existeVariableLocal(ctx, nombre)){
-                    //Reportar error, redefiniendo una variable local
-                    continue;                    
+            } else {
+                if (existeVariableLocal(ctx, nombre)) {
+                    Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                            "Imposible redefinir la variable local '" + nombre + "'.");
+                    continue;
                 }
                 crearVariableLocal(ctx, var);
             }
         }
         return FabricaResultado.creaOK();
     }
-    
+
     private void crearVariableLocal(Contexto ctx, Variable nueva) {
         ctx.setVariable(nueva);
     }

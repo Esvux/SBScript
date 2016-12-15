@@ -1,7 +1,6 @@
 package org.esvux.sbscript.errores;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.esvux.sbscript.ast.Constantes;
 
@@ -30,39 +29,37 @@ public class Errores {
     private Errores() {
         listaErrores = new ArrayList<>();
     }
-    
-    public String[][] getReporteErrores(){
-        int i = 0, cant = listaErrores.size();
-        String [][] detalleErrores = new String[cant][2];
-        Iterator<SBError> it = listaErrores.iterator();
-        while(it.hasNext()){
-            detalleErrores[i] = it.next().detalle();
-            i++;
+
+    public String[] getReporteErrores() {
+        int cant = listaErrores.size();
+        String[] detalleErrores = new String[cant];
+        for (int i = 0; i < cant; i++) {
+            detalleErrores[i] = listaErrores.get(i).toString();
         }
         return detalleErrores;
     }
 
-    public void nuevoErrorLexico(int fila, int columna, String descripcion){
-        SBError err = new SBError(fila, columna, Constantes.ERR_LEXICO, descripcion);
+    public void nuevoErrorLexico(int linea, int columna, String descripcion) {
+        SBError err = new SBError(linea, columna, Constantes.ERR_LEXICO, descripcion);
         listaErrores.add(err);
     }
-    
-    public void nuevoErrorSintactico(int fila, int columna, String descripcion){
-        SBError err = new SBError(fila, columna, Constantes.ERR_SINTACTICO, descripcion);
+
+    public void nuevoErrorSintactico(int linea, int columna, String descripcion) {
+        SBError err = new SBError(linea, columna, Constantes.ERR_SINTACTICO, descripcion);
         listaErrores.add(err);
     }
-    
-    public void nuevoErrorSemantico(int fila, int columna, String descripcion){
-        SBError err = new SBError(fila, columna, Constantes.ERR_SEMANTICO, descripcion);
+
+    public void nuevoErrorSemantico(int linea, int columna, String descripcion) {
+        SBError err = new SBError(linea, columna, Constantes.ERR_SEMANTICO, descripcion);
         listaErrores.add(err);
     }
-        
-    public void nuevoError(String descripcion){
+
+    public void nuevoError(String descripcion) {
         SBError err = new SBError(-1, -1, Constantes.ERR_GENERAL, descripcion);
         listaErrores.add(err);
     }
 
-    public int cuentaErrores(){
+    public int cuentaErrores() {
         return listaErrores.size();
     }
 

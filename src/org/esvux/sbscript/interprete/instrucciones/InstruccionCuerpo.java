@@ -2,6 +2,7 @@ package org.esvux.sbscript.interprete.instrucciones;
 
 import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
+import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
 import org.esvux.sbscript.interprete.FabricaResultado;
 import org.esvux.sbscript.interprete.Resultado;
@@ -61,7 +62,8 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                     break;
             }
             if (res == null) {
-                //Error, instruccion fuera de control
+                Errores.getInstance().nuevoErrorSemantico(nodo.getLinea(), nodo.getColumna(),
+                        "Instruccion '" + nodo.getCadena() + "' fuera de control.");
                 continue;
             }
             if (res.esRetorno()) {
@@ -71,7 +73,8 @@ public class InstruccionCuerpo extends InstruccionAbstracta {
                 if (permiteInterrupciones) {
                     return res;
                 } else {
-                    //Error, detener o continuar, fuera de contexto
+                    Errores.getInstance().nuevoErrorSemantico(nodo.getLinea(), nodo.getColumna(),
+                        "Instruccion '" + nodo.getCadena() + "' fuera de contexto.");
                 }
             }
         }
