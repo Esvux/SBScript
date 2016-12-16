@@ -1,14 +1,10 @@
 package org.esvux.sbscript.ventanas;
 
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Insets;
 import java.awt.event.KeyEvent;
 import javax.swing.BorderFactory;
 import javax.swing.DefaultListModel;
 import javax.swing.JOptionPane;
-import javax.swing.ListModel;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Utilities;
 import org.esvux.sbscript.errores.Errores;
@@ -26,34 +22,9 @@ import org.fife.ui.rtextarea.RTextScrollPane;
  */
 public class SBScript extends javax.swing.JFrame {
 
-    private RSyntaxTextArea rsta = new RSyntaxTextArea(20, 60);
-    
     public SBScript() {
         initComponents();
-        AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
-        atmf.putMapping("text/SBScript", "org.esvux.sbscript.ventanas.SBScriptSyntax");
-        rsta.setSyntaxEditingStyle("text/SBScript");
-        rsta.setCodeFoldingEnabled(true);
-        rsta.setCurrentLineHighlightColor(new Color(227, 242, 253, 200));
-        rsta.setFadeCurrentLineHighlight(true);
-        rsta.setBorder(BorderFactory.createEmptyBorder());
-        rsta.addKeyListener(new java.awt.event.KeyAdapter() {
-            @Override
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jTextEntradaKeyReleased(evt);
-            }
-        });
-        RTextScrollPane rtsp = new RTextScrollPane(rsta);
-        rtsp.setViewportBorder(BorderFactory.createEmptyBorder());
-        jPanelPrincipal.add(rtsp);
-
-        SyntaxScheme scheme = rsta.getSyntaxScheme();
-        scheme.getStyle(Token.RESERVED_WORD).foreground = Color.blue;
-        scheme.getStyle(Token.LITERAL_STRING_DOUBLE_QUOTE).foreground = Color.orange;
-        scheme.getStyle(Token.IDENTIFIER).foreground = Color.green;
-        scheme.getStyle(Token.DATA_TYPE).foreground = Color.MAGENTA;
-        
-
+        configurarEditor();
     }
 
     @SuppressWarnings("unchecked")
@@ -61,24 +32,22 @@ public class SBScript extends javax.swing.JFrame {
     private void initComponents() {
 
         jPanelPrincipal = new javax.swing.JPanel();
-        jTabInformacion = new javax.swing.JTabbedPane();
         jPanelSalidas = new javax.swing.JPanel();
         jButtonCompilar = new javax.swing.JButton();
+        jLabelUbicacion = new javax.swing.JLabel();
         jButtonEjemplo1 = new javax.swing.JButton();
         jButtonEjemplo2 = new javax.swing.JButton();
         jButtonEjemplo3 = new javax.swing.JButton();
-        jScrollPaneSalida = new javax.swing.JScrollPane();
-        jTextAreaSalida = new javax.swing.JTextArea();
-        jLabelUbicacion = new javax.swing.JLabel();
         jScrollPaneErrores = new javax.swing.JScrollPane();
         jListErrores = new javax.swing.JList<>();
+        jScrollPaneSalida = new javax.swing.JScrollPane();
+        jTextAreaSalida = new javax.swing.JTextArea();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setTitle("SBScript - By Esvux");
         setBackground(java.awt.Color.white);
 
         jPanelPrincipal.setLayout(new java.awt.BorderLayout());
-
-        jTabInformacion.setBackground(java.awt.Color.white);
 
         jPanelSalidas.setBackground(java.awt.Color.white);
 
@@ -89,6 +58,9 @@ public class SBScript extends javax.swing.JFrame {
                 jButtonCompilarActionPerformed(evt);
             }
         });
+
+        jLabelUbicacion.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
+        jLabelUbicacion.setText("Columna: 1");
 
         jButtonEjemplo1.setText("Ejemplo 1");
         jButtonEjemplo1.setToolTipText("Ejemplo sencillo");
@@ -114,53 +86,36 @@ public class SBScript extends javax.swing.JFrame {
             }
         });
 
-        jTextAreaSalida.setColumns(20);
-        jTextAreaSalida.setRows(5);
-        jTextAreaSalida.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyReleased(java.awt.event.KeyEvent evt) {
-                jTextAreaSalidaKeyReleased(evt);
-            }
-        });
-        jScrollPaneSalida.setViewportView(jTextAreaSalida);
-
-        jLabelUbicacion.setHorizontalAlignment(javax.swing.SwingConstants.CENTER);
-
         javax.swing.GroupLayout jPanelSalidasLayout = new javax.swing.GroupLayout(jPanelSalidas);
         jPanelSalidas.setLayout(jPanelSalidasLayout);
         jPanelSalidasLayout.setHorizontalGroup(
             jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanelSalidasLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPaneSalida)
-                    .addGroup(jPanelSalidasLayout.createSequentialGroup()
-                        .addComponent(jButtonCompilar, javax.swing.GroupLayout.DEFAULT_SIZE, 81, Short.MAX_VALUE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabelUbicacion, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonEjemplo1)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonEjemplo2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jButtonEjemplo3)))
+                .addComponent(jButtonCompilar, javax.swing.GroupLayout.PREFERRED_SIZE, 84, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabelUbicacion, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jButtonEjemplo1)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonEjemplo2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jButtonEjemplo3)
                 .addContainerGap())
         );
         jPanelSalidasLayout.setVerticalGroup(
             jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanelSalidasLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(jButtonCompilar)
-                    .addComponent(jButtonEjemplo1)
-                    .addComponent(jButtonEjemplo2)
-                    .addComponent(jButtonEjemplo3)
+                .addGroup(jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanelSalidasLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(jButtonEjemplo1)
+                        .addComponent(jButtonEjemplo2)
+                        .addComponent(jButtonEjemplo3))
+                    .addComponent(jButtonCompilar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addComponent(jLabelUbicacion, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jScrollPaneSalida, javax.swing.GroupLayout.DEFAULT_SIZE, 383, Short.MAX_VALUE)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
-
-        jTabInformacion.addTab("   Salida   ", jPanelSalidas);
 
         jListErrores.setModel(new javax.swing.AbstractListModel<String>() {
             String[] strings = { "No existen errores en el programa." };
@@ -169,32 +124,47 @@ public class SBScript extends javax.swing.JFrame {
         });
         jScrollPaneErrores.setViewportView(jListErrores);
 
-        jTabInformacion.addTab("   Errores   ", jScrollPaneErrores);
+        jTextAreaSalida.setColumns(20);
+        jTextAreaSalida.setRows(5);
+        jScrollPaneSalida.setViewportView(jTextAreaSalida);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addComponent(jPanelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, 454, Short.MAX_VALUE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                .addComponent(jTabInformacion, javax.swing.GroupLayout.PREFERRED_SIZE, 426, javax.swing.GroupLayout.PREFERRED_SIZE)
+            .addGroup(layout.createSequentialGroup()
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jPanelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, 455, Short.MAX_VALUE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jPanelSalidas, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                            .addComponent(jScrollPaneSalida)))
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPaneErrores)))
                 .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jTabInformacion)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jPanelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addGroup(layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jPanelSalidas, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jScrollPaneSalida, javax.swing.GroupLayout.DEFAULT_SIZE, 321, Short.MAX_VALUE)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPaneErrores, javax.swing.GroupLayout.PREFERRED_SIZE, 93, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
-            .addComponent(jPanelPrincipal, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
     private void jButtonCompilarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonCompilarActionPerformed
-        // TODO add your handling code here:
+        ejecutar();
     }//GEN-LAST:event_jButtonCompilarActionPerformed
 
     private void jButtonEjemplo1ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_jButtonEjemplo1ActionPerformed
@@ -209,29 +179,13 @@ public class SBScript extends javax.swing.JFrame {
         // TODO add your handling code here:
     }//GEN-LAST:event_jButtonEjemplo3ActionPerformed
 
-    private void jTextAreaSalidaKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_jTextAreaSalidaKeyReleased
-        
-    }//GEN-LAST:event_jTextAreaSalidaKeyReleased
-
-    private void jTextEntradaKeyReleased(java.awt.event.KeyEvent evt) {                                            
+    private void jTextEntradaKeyReleased(java.awt.event.KeyEvent evt) {
+        actualizarNumeroColumna();
         if (evt.getKeyCode() == KeyEvent.VK_F5) {
-            Interprete i = new Interprete(rsta.getText());
-            i.analizar();
-            i.ejecutar();
-            mostrarSalida(i.getSalida());
-            mostrarErrores();
+            ejecutar();
         }
-        try {
-            int caretPos = rsta.getCaretPosition();
-            int offset = Utilities.getRowStart(rsta, caretPos);
-            int colNum = caretPos - offset + 1;
-            jLabelUbicacion.setText("Columna: " + colNum);
-        } catch (BadLocationException ex) {
-            System.err.println(ex.getMessage());
-        }        
-    }                                           
-    
-    
+    }
+
     public static void main(String args[]) {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -244,6 +198,7 @@ public class SBScript extends javax.swing.JFrame {
             java.util.logging.Logger.getLogger(SBScript.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
         }
         java.awt.EventQueue.invokeLater(new Runnable() {
+            @Override
             public void run() {
                 SBScript sbs = new SBScript();
                 sbs.getContentPane().setBackground(Color.white);
@@ -263,22 +218,29 @@ public class SBScript extends javax.swing.JFrame {
     private javax.swing.JPanel jPanelSalidas;
     private javax.swing.JScrollPane jScrollPaneErrores;
     private javax.swing.JScrollPane jScrollPaneSalida;
-    private javax.swing.JTabbedPane jTabInformacion;
     private javax.swing.JTextArea jTextAreaSalida;
     // End of variables declaration//GEN-END:variables
+    private RSyntaxTextArea rsta;
+
+    private void ejecutar() {
+        Interprete i = new Interprete(rsta.getText());
+        i.analizar();
+        i.ejecutar();
+        mostrarSalida(i.getSalida());
+        mostrarErrores();
+    }
 
     private void mostrarErrores() {
-        Errores errs = Errores.getInstance();        
+        Errores errs = Errores.getInstance();
         int cuentaErrores = errs.cuentaErrores();
-        DefaultListModel<String> modelo = new DefaultListModel<>();        
+        DefaultListModel<String> modelo = new DefaultListModel<>();
         if (cuentaErrores > 0) {
-            JOptionPane.showMessageDialog(this, "Existen algunos errores en la entrada de SBScript.", "SBSript by Esvux", JOptionPane.ERROR_MESSAGE);            
-            for(String err : errs.getReporteErrores())
+            JOptionPane.showMessageDialog(this, "Existen algunos errores en la entrada de SBScript.", "SBSript by Esvux", JOptionPane.ERROR_MESSAGE);
+            for (String err : errs.getReporteErrores()) {
                 modelo.addElement(err);
-            jTabInformacion.setSelectedIndex(1);
+            }
         } else {
             modelo.addElement("No existen errores en el programa.");
-            jTabInformacion.setSelectedIndex(0);
         }
         jListErrores.setModel(modelo);
     }
@@ -287,6 +249,44 @@ public class SBScript extends javax.swing.JFrame {
         jTextAreaSalida.setText(salida);
     }
 
+    private void configurarEditor() {
+        AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
+        atmf.putMapping("text/SBScript", "org.esvux.sbscript.ventanas.SBScriptSyntax");
+        rsta = new RSyntaxTextArea(20, 60);
+        rsta.setSyntaxEditingStyle("text/SBScript");
+        rsta.setCodeFoldingEnabled(true);
+        rsta.setCurrentLineHighlightColor(new Color(227, 242, 253, 200));
+        rsta.setFadeCurrentLineHighlight(true);
+        rsta.setBorder(BorderFactory.createEmptyBorder());
+        rsta.addKeyListener(new java.awt.event.KeyAdapter() {
+            @Override
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jTextEntradaKeyReleased(evt);
+            }
+        });
+        RTextScrollPane rtsp = new RTextScrollPane(rsta);
+        rtsp.setViewportBorder(BorderFactory.createEmptyBorder());
+        jPanelPrincipal.add(rtsp);
 
+        SyntaxScheme scheme = rsta.getSyntaxScheme();
+        scheme.getStyle(Token.RESERVED_WORD).foreground = Color.decode("#0d47a1");
+        scheme.getStyle(Token.LITERAL_STRING_DOUBLE_QUOTE).foreground = Color.decode("#e65100");
+        scheme.getStyle(Token.IDENTIFIER).foreground = Color.decode("#1b5e20");
+        scheme.getStyle(Token.DATA_TYPE).foreground = Color.decode("#42a5f5");
+        scheme.getStyle(Token.COMMENT_EOL).foreground = Color.decode("#827717");
+        scheme.getStyle(Token.COMMENT_MULTILINE).foreground = Color.decode("#827717");
+        scheme.getStyle(Token.SEPARATOR).foreground = Color.black;
+    }
+
+    private void actualizarNumeroColumna() {
+        try {
+            int caretPos = rsta.getCaretPosition();
+            int offset = Utilities.getRowStart(rsta, caretPos);
+            int colNum = caretPos - offset + 1;
+            jLabelUbicacion.setText("Columna: " + colNum);
+        } catch (BadLocationException ex) {
+            System.err.println(ex.getMessage());
+        }
+    }
 
 }
