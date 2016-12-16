@@ -35,6 +35,8 @@ public class ExpresionLogica extends ExpresionAbstracta {
         int tipoIzq = resIzq.getTipo();
         int tipoDer = resDer.getTipo();
         if (!(tipoIzq == Constantes.T_BOOL && tipoIzq == tipoDer)) {
+            Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(),
+                    "Los tipos para la operacion logica deben ser booleanos.");
             return new Resultado();
         }
         boolean blnIzq = resIzq.getBooleano();
