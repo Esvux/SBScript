@@ -1,6 +1,5 @@
 package org.esvux.sbscript.interprete.instrucciones;
 
-import org.esvux.sbscript.ast.Constantes;
 import org.esvux.sbscript.ast.Nodo;
 import org.esvux.sbscript.errores.Errores;
 import org.esvux.sbscript.interprete.Contexto;
@@ -23,7 +22,7 @@ public class InstruccionMostrar extends InstruccionAbstracta {
     public Resultado ejecutar(Contexto ctx, int nivel) {
         for (Nodo exp : instruccion.getHijos()) {
             Resultado res = new Expresion(exp).resolver(ctx);
-            if (res.getTipo() == Constantes.T_ERROR) {
+            if (res.esError()) {
                 Errores.getInstance().nuevoErrorSemantico(exp.getLinea(), exp.getColumna(),
                         "La expresion que se desea mostrar cuenta con errores.");
                 continue;

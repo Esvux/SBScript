@@ -54,7 +54,7 @@ public class InstruccionLlamada extends InstruccionAbstracta {
                 return FabricaResultado.creaFAIL();
             }
             nodoValor = FabricaAST.creaHoja(valor.getValor(), valor.getTipo());
-            Nodo declara = creaDeclaracion(nodoParam, nodoValor);
+            Nodo declara = crearDeclaracion(nodoParam, nodoValor);
             new InstruccionDeclaracion(declara).ejecutar(local, nivel);
         }
         InstruccionCuerpo instr = new InstruccionCuerpo(metodo.getCuerpo(), false);
@@ -67,7 +67,7 @@ public class InstruccionLlamada extends InstruccionAbstracta {
         return ejecucion;
     }
 
-    private Nodo creaDeclaracion(Nodo parametro, Nodo expresion) {
+    private Nodo crearDeclaracion(Nodo parametro, Nodo expresion) {
         Nodo declaracion = FabricaAST.creaDeclaracion(parametro.getTipo(), parametro.getCadena());
         declaracion.addHijo(expresion);
         return declaracion;

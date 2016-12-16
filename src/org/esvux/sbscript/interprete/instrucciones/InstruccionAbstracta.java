@@ -30,20 +30,20 @@ public abstract class InstruccionAbstracta {
         var = Interprete.getContextoGlobal().getVariable(nombre);
         return var;
     }
-    
-    public void setVariable(Contexto ctx, Variable var) {
+
+    protected void setVariable(Contexto ctx, Variable var) {
         if (ctx.existeVariable(var.getNombre())) {
             ctx.setVariable(var);
-        }else if(Interprete.getContextoGlobal().existeVariable(var.getNombre())){
+        } else if (Interprete.getContextoGlobal().existeVariable(var.getNombre())) {
             Interprete.getContextoGlobal().setVariable(var);
         }
     }
-    
-    public boolean existeVariable(Contexto ctx, String nombre) {
+
+    protected boolean existeVariable(Contexto ctx, String nombre) {
         return ctx.existeVariable(nombre) || Interprete.getContextoGlobal().existeVariable(nombre);
     }
-    
-    public boolean asignacionValida(int tipoDestino, int tipoFuente) {
+
+    protected boolean asignacionValida(int tipoDestino, int tipoFuente) {
         //Una comprobación más extensa sería bien resuelta por una 
         //matriz de tipos, ver resolverSuma
         return tipoDestino == tipoFuente;

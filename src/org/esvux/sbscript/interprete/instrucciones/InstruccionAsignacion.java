@@ -23,23 +23,23 @@ public class InstruccionAsignacion extends InstruccionAbstracta {
     public Resultado ejecutar(Contexto ctx, int nivel) {
         String nombre = instruccion.getCadena();
         if (!existeVariable(ctx, nombre)) {
-            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(), 
-                    "La variable destino '"+nombre+"' no existe.");
+            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                    "La variable destino '" + nombre + "' no existe.");
             return FabricaResultado.creaFAIL();
         }
         Nodo exp = instruccion.getHijo(0);
         Resultado res = new Expresion(exp).resolver(ctx);
         int tipoRes = res.getTipo();
         if (tipoRes == Constantes.T_ERROR) {
-            Errores.getInstance().nuevoErrorSemantico(exp.getLinea(), exp.getColumna(), 
+            Errores.getInstance().nuevoErrorSemantico(exp.getLinea(), exp.getColumna(),
                     "Existe un error en la evaluacion de la expresion.");
             return FabricaResultado.creaFAIL();
         }
         Variable destino = obtenerVariable(ctx, nombre);
         int tipoDest = destino.getTipo();
         if (!asignacionValida(tipoDest, tipoRes)) {
-            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(), 
-                    "El tipo de la variable '"+nombre+"' no coincide con el valor que se desea asignar.");
+            Errores.getInstance().nuevoErrorSemantico(instruccion.getLinea(), instruccion.getColumna(),
+                    "El tipo de la variable '" + nombre + "' no coincide con el valor que se desea asignar.");
             return FabricaResultado.creaFAIL();
         }
         destino.setValor(res.getValor());

@@ -30,10 +30,10 @@ public class InstruccionDeclaracion extends InstruccionAbstracta {
             int tipoRes = res.getTipo();
             if (tipoRes == Constantes.T_ERROR) {
                 Errores.getInstance().nuevoErrorSemantico(nodoExp.getLinea(), nodoExp.getColumna(),
-                        "La evaluacion de la expresion presenta errores, las variables existiran pero con valor nulo.");
+                        "La expresion presenta errores, las variables existiran pero con valor nulo.");
             } else if (!asignacionValida(tipo, tipoRes)) {
                 Errores.getInstance().nuevoErrorSemantico(nodoExp.getLinea(), nodoExp.getColumna(),
-                        "El casteo de la asignacion presenta errores, las variables existiran pero con valor nulo.");
+                        "El casteo de la asignacion es erroneo, las variables existiran pero con valor nulo.");
             } else {
                 valor = res.getValor();
             }
