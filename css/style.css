@@ -9,3 +9,11 @@ blockquote{
 .table-of-contents a:hover{
 	border-left: 1px solid #0d47a1;
 }
+
+p{
+	font-weight: 300;
+}
+
+p b{
+	font-weight: normal;
+}

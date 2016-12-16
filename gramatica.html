@@ -66,8 +66,52 @@
 				</div>
 				<div class="col s11 pull-s1">
 					<h2 class="thin">Gramática</h2>
+					<p>
+						Una gramática, en el contexto de los lenguajes de programación, es la estructura ubicada en la fase de análisis sintáctico que determina el correcto orden en el que deben estar los tokens generados por el analizador léxico. La estructura de la gramática está compuesta por componentes <i>terminales (Tokens)</i> y componentes <i>no terminales (Cada uno definido como una producción)</i>, así pues si a una gramática le agregamos acciones (que pueden interactuar con los atributos de los componentes) transformamos una gramática en una traducción dirigida por la sintaxis. El corazón de nuestro intérprete será la gramática, encargada de reconocer la entrada, generar el AST, y controlar los posibles errores que existan en la entrada. Para generar la gramática utilizaremos la herramienta JavaCC.
+					</p>
 					<div id="javacc" class="section scrollspy">
 						<h4 class="thin">JavaCC</h4>
+						<p>
+							JavaCC es el acronimo para Java Compiler Compiler, que puede interpretarse como compilador de compiladores, es una herramienta que nos permite analizar un archivo de especificación del lenguaje fuente y producto de ese análisis obtener un conjunto de clases (archivos .java) que realizarán el parseo de una entrada de caracteres, pasando por las fases de análisis léxico y análisis sintáctico.<br>
+							Dicho de una forma más simple, JavaCC construye analizadores descendentes recursivos. Los archivos de especificación de lenguajes (que típicamente son asociados con la extensión .jj) cuentan con varias secciones, la primera de ellas es la sección en donde le indicamos a JavaCC aspectos propios del comportamiento de nuestro parser (que distinga entre mayúsculas y minúsculas, que reconozca caracteres UNICODE, la habilitación del debug del parser, la cantidad de tokens de anticipación, etc), en <a href="https://javacc.java.net/doc/javaccgrm.html">este enlace</a> se encuenta un detallado listado de todas las opciones disponibles para utilizar en esta sección, para nuestro caso utilizaremos unicamente dos valores distintos a los que trae JavaCC por defecto.
+						</p>
+<pre class="prettyprint"><code class="language-java">options {
+	// El parser no distinguirá entre mayúsculas y minúsculas
+	// para los tokens, por ejemplo para las palabras reservadas
+	IGNORE_CASE = true;
+	// El parser será totalmente dinámico, sin esta opción la 
+	// cadena de entrada se podría analizar una única vez
+	STATIC = false;
+}
+</code></pre>
+						<p>
+							La siguiente sección es donde empieza a aparecer el verdadero código en Java, esta sección es la definición de la clase encargada del parseo de la entrada; delimitada por <i>PARSER_BEGIN(id)</i> y <i>PARSER_END(id)</i>, donde <b>id</b> es el nombre que llevará la clase prinicipal y el prefijo que servirá para otras clases que utiliza el analizador. Dentro de esta sección se declara el paquete al que pertencerán todas las clases generadas por JavaCC, además de todos los <i>imports</i> necesarios para que las acciones que agreguemos más adelante funcionen correctamente; también pueden definirse variables o métodos globales que estarán disponibles en cualquiera de nuestras producciones.
+						</p>
+<pre class="prettyprint"><code class="language-java">PARSER_BEGIN(ParserSBScript)
+//Definición del paquete
+package org.esvux.sbscript.parser;
+//Imports necesarios
+import ···
+PARSER_END(ParserSBScript)
+</code></pre>
+						<p>
+							El orden de las secciones es importante unicamente para las dos primeras secciones; luego de ellas puede venir en, cualquier orden, la especificación de las producciones o la especificación de los tokens (fase de análisis léxico). En la sección de definición de tokens se utilizan expresiones regulares comunes y corrientes, asociadas a un nombre en específico, esta sección inicia con <b>TOKEN:</b> y dentro de un juego de llaves <b>{ ··· }</b> se definen los tokens que formarán nuestro lenguaje. A continuación se encuentran varias de las definiciones típicas de cualquier lenguaje escritas para JavaCC.
+						</p>
+<pre class="prettyprint"><code class="language-java">TOKEN:{
+	// Un símbolo cualquiera
+	< PYC : ";" > 
+	// Una palabra reservada
+	| < PR_PRINCIPAL : "Principal" >
+	// Un número entero o con punto decimal
+	| < NUMERO  : (["0"-"9"])+ | (["0"-"9"])+ "." (["0"-"9"])+ >
+	// Un identificador
+	| < ID : ["a"-"z","A"-"Z"] (["a"-"z","A"-"Z","0"-"9","_"])*>
+	// ··· así hasta definir todos los tokens de nuestro lenguaje
+}
+</code></pre>
+						<p>
+							Como se puede observar cada token está delimitado por los símbolos <b>&lt;</b> y <b>&gt;</b>, dentro de estos símbolos se define el nombre (regularmente en mayúsculas, aunque sin ser obligatorio) seguido de <b>:</b> y luego la expresión regular, cada token está separado uno de otro por un símbolo <b>|</b> (típico OR).
+						</p>
 					</div>
 					<div id="gramatica" class="section scrollspy">
 						<h4 class="thin">La Gramática</h4>
