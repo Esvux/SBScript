@@ -3,10 +3,14 @@
 <head>
 	<meta charset="utf-8"/>
 	<title>SBScript - Compiladores 2</title>
-	<!-- Compiled and minified CSS -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css"/>
-	<!-- Compiled and minified JavaScript -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<style type="text/css">
+		blockquote{
+			border-left-color: #263238;
+		}
+	</style>
 </head>
 	<body>
 		<nav>
@@ -14,17 +18,38 @@
 				<div class="col s12">
 			        <a href="#" data-activates="mobile-demo" class="button-collapse"><i class="material-icons">menu</i></a>
 					<ul class="right hide-on-med-and-down">          
-						<li class="link"><a href="/product">Antes de empezar...</a></li>
-						<li class="link"><a href="/blueprints">Gramática</a></li>          
-						<li class="link"><a href="/partners">AST</a></li>          
-						<li class="link"><a href="/pricing">Intérprete</a></li>
-						<li class="link"><a href="/pricing">Manejo de errores</a></li>
+						<li class="link">
+							<a href="/antesde.html">
+								<i class="material-icons left">code</i> Antes de empezar...
+							</a>
+						</li>
+						<li class="link">
+							<a href="/gramatica.html">
+								<i class="material-icons left">spellcheck</i> Gramática
+							</a>
+						</li>
+						<li class="link">
+							<a href="/ast.html">
+								<i class="material-icons left">share</i> AST
+							</a>
+						</li>          
+						<li class="link">
+							<a href="/interprete.html">
+								<i class="material-icons left">play_arrow</i> Intérprete
+							</a>
+						</li>
+						<li class="link">
+							<a href="/errores.html">
+								<i class="material-icons left">error</i> Manejo de errores
+							</a>
+						</li>
 					</ul>
 					<ul class="side-nav" id="mobile-demo">
-						<li><a href="/product">Product</a></li>
-						<li><a href="/blueprints">Blueprints</a></li>          
-						<li><a href="/partners">Partners</a></li>          
-						<li><a href="/pricing">Pricing</a></li>   
+						<li><a href="/antesde.html">Antes de empezar...</a></li>
+						<li><a href="/gramatica.html">Gramática</a></li>          
+						<li><a href="/ast.html">AST</a></li>          
+						<li><a href="/interprete.html">Intérprete</a></li> 
+						<li><a href="/errores.html">Manejo de errores</a></li> 
 					</ul>
 				</div>
 			</div>			
@@ -39,6 +64,41 @@
 			<div class="row">
 				<div class="col s12 center">
 					<img src="img/inicio.png" style="border-top-left-radius: 5px; border-top-right-radius: 5px; border: 1px #e0e0e0 solid;">
+				</div>
+			</div>
+			<div class="row">
+				<div class="col s12 m4">
+					<a href="https://github.com/bobbylight/RSyntaxTextArea">
+						<ul class="collection">
+							<li class="collection-item avatar">
+								<i class="material-icons circle blue darken-3">code</i>
+								<span class="title">RSyntaxTextArea</span>
+								<p style="color: black">Componente java swing que permite el resaltado de sintaxis</p>
+							</li>
+						</ul>
+					</a>
+				</div>
+				<div class="col s12 m4">
+					<a href="https://github.com/bobbylight/TokenMakerMaker">
+						<ul class="collection">
+							<li class="collection-item avatar">
+								<i class="material-icons circle blue darken-3">code</i>
+								<span class="title">TokenMakerMaker</span>
+								<p style="color: black">Asistente para crear el resaltador de sintaxis para un lenguaje personalizado</p>
+							</li>
+						</ul>
+					</a>
+				</div>
+				<div class="col s12 m4">
+					<a href="https://javacc.java.net/">
+						<ul class="collection">
+							<li class="collection-item avatar">
+								<i class="material-icons circle blue darken-3">code</i>
+								<span class="title">JavaCC</span>
+								<p style="color: black">Generador de analizadores sintácticos descendentes recursivos</p>
+							</li>
+						</ul>
+					</a>
 				</div>
 			</div>
 		</div>
