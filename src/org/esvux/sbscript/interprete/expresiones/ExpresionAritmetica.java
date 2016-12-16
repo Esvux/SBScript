@@ -31,10 +31,11 @@ public class ExpresionAritmetica extends ExpresionAbstracta {
 
     private Resultado resolverBinaria(Contexto ctx) {
         Resultado resIzq = new Expresion(izq).resolver(ctx);
+        if (resIzq.esError()) {
+            return new Resultado();
+        }
         Resultado resDer = new Expresion(der).resolver(ctx);
-        int tipoIzq = resIzq.getTipo();
-        int tipoDer = resDer.getTipo();
-        if (tipoIzq == Constantes.T_ERROR || tipoDer == Constantes.T_ERROR) {
+        if (resDer.esError()) {
             return new Resultado();
         }
         if (operando == Constantes.OPA_SUM) {
@@ -89,16 +90,16 @@ public class ExpresionAritmetica extends ExpresionAbstracta {
                 break;
             case Constantes.OPA_DIV:
                 if (dblDer == 0) {
-                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(), 
-                    "No es posible realizar una division entre 0.");
+                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(),
+                            "No es posible realizar una division entre 0.");
                     return new Resultado();
                 }
                 dblIzq /= dblDer;
                 break;
             case Constantes.OPA_MOD:
                 if (dblDer == 0) {
-                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(), 
-                    "No es posible realizar una operacion de modulo entre 0.");
+                    Errores.getInstance().nuevoErrorSemantico(der.getLinea(), der.getColumna(),
+                            "No es posible realizar una operacion de modulo entre 0.");
                     return new Resultado();
                 }
                 int mod = (int) dblIzq % (int) dblDer;
