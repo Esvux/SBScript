@@ -3,14 +3,13 @@
 <head>
 	<meta charset="utf-8"/>
 	<title>SBScript - Compiladores 2</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css"/>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<style type="text/css">
-		blockquote{
-			border-left-color: #263238;
-		}
-	</style>
+	<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<script type="text/javascript" src="js/code.js"></script>
 </head>
 	<body>
 		<nav>
@@ -58,7 +57,53 @@
 		</nav>
 		<div class="container">
 			<div class="row">
-				<div class="col s12"></div>
+				<div class="col s1 push-s11">
+					<ul class="section table-of-contents" style="top: 200px; position: fixed;">
+						<li><a href="#antecedentes" >Antecedentes</a></li>
+						<li><a href="#requerimientos" >Requerimientos</a></li>
+					</ul>
+				</div>
+				<div class="col s11 pull-s1">
+					<h2 class="thin">Antes de empezar...</h2>
+					<p>
+						Si estás leyendo esto, es probable que en tu carrera universitaria tengas una (o varias) asignaturas destinadas al estudio de los compiladores, esos programas tan sorprendentes que permiten traducir una entrada en un lenguaje predeterminado en una salida definida por un lenguaje y un conjunto de acciones; Pues esos programas, al menos en mi universidad, son los culpables de que la mayoría de estudiantes abandonen la carrera de Ingeniería en Ciencias y Sistemas ¿por qué?, la misma pregunta me hago todos los días...
+					</p>
+					<div id="antecedentes" class="section scrollspy">
+						<h4 class="thin">Antecedentes</h4>
+						<p>
+							En la universidad de San Carlos de Guatemala existe la Escuela de Ciencias y Sistemas, encargada de llevar el rumbo de la Ingeniería hominima a la escuela, en su red de estudios (a.k.a pénsum) existe toda una rama de cursos dedicada al estudio de los lenguajes de programación.
+						</p>
+						<ul class="browser-default">
+							<li>Lenguajes Formales y de Programación (4to. Semestre)</li>
+							<li>Organización de Lenguajes y Compiladores 1 (5to. Semestre)</li>
+							<li>Organización de Lenguajes y Compiladores 2 (6to. Semestre)</li>
+						</ul>
+						<p>
+							Al llegar a estos cursos, <b>se supone</b>, que el estudiante debería de dominar la programación orientada a objetos, conocer al menos 3 lenguajes de programación (Java, C#, C++ o C, hasta donde recuerdo), tener habilidades en el análisis de soluciones de software y practicar los buenos hábitos de programación, como la aplicación de patrones de diseño o el control de versiones. Por qué hago énfasis en el <b>'se supone'</b>, porque en la mayoría de los casos no es así, desde este punto empieza el descenso hasta el avismo que representa para muchos NO poder ganar Compi2. El objetivo de este proyecto no es enseñar a programar en Java, porque se supone que como estudiante, ya tenés esos conocimientos, el objetivo de este proyecto es profundizar en el uso de la herramienta para generar analizadores por descenso recursivo JavaCC y ser una guía en el proceso de creación de un intérprete básico (ver sección de <a target="_blank" href="/SBScript/interprete.html">Intérprete</a>).
+						</p>
+					</div>
+					<div id="requerimientos" class="section scrollspy">
+						<h4 class="thin">Requerimientos mínimos</h4>
+						<p>
+							Para seguir esta guía es necesario que descargués el proyecto desde el repositorio de github en línea; Pero antes de descargarlo asegurate de tener en tu computadora, como mínimo, los siguientes requerimientos.
+						</p>
+						<ul class="browser-default">
+							<li>Java Development Kit 8</li>
+							<li>JavaCC 5.0</li>
+							<li>RSyntaxTextArea 2.5.3</li>
+							<li>NetBeans 8.1 (es posible utilizar otro IDE)</li>
+							<li>Git 2.7.4 (no es necesario, pero sí muy útil)</li>
+						</ul>
+						<p>
+							Si no tenés experiencia con git como sistema de control de versiones, ingresa a <a href="https://github.com/Esvux/SBScript">esta página</a> y descargá el proyecto. Si ya tenés un poco de experiencia, abrís una terminal e ingresás los siguientes comandos para clonar el proyecto.<br>
+<pre class="prettyprint"><code class="language-sh">#Clonando el proyecto
+~$ cd carpeta/de/tus/proyectos
+~$ git clone 'https://github.com/Esvux/SBScript.git'
+</code></pre>
+							Si solamente querés ver la aplicación funcionando podés ejecutar el archivo jar contenido en la carpeta dist del proyecto, en Windows doble click sobre el jar; en linux desde la terminal <code>java -jar SBScript.jar</code> se abrirá el editor y listo, el programa estará funcionando.
+						</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	</body>
