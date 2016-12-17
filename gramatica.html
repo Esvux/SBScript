@@ -165,8 +165,11 @@ void DEC_GLOBAL():{ Token id; Token aux; String tipo; }
 					<div id="atributos" class="section scrollspy">
 						<h4 class="thin">Los Atributos</h4>
 						<p>
-							Si ya has llevado alguna vez el curso de Compi2, sabrás que en las traducciones dirigidas por la sintaxis existen dos tipos de atributos, los sintetizados y los heredados, cuál utilizar, cuál es la diferencia entre ellos, para tener la mejor respuesta posible consultá el capítulo 5 del libro de texto del curso; de forma muy superficial lo que necesitas saber es que la diferencia entre estos tipos de atributos es la forma en que se definen sus valores, los <b>atributos sintetizados</b> definen sus valores a partir de sus nodos hijos (hijos en el árbol de análisis sintáctico). Mientras que los <b>atributos heredados</b> definen sus valores a partir de la información de los nodos que, dentro del árbol de análisis sintáctico, son sus hermanos o su padre directamente.
+							Si ya has llevado alguna vez el curso de Compi2, sabrás que en las traducciones dirigidas por la sintaxis existen dos tipos de atributos, los sintetizados y los heredados, cuál utilizar, cuál es la diferencia entre ellos, para tener la mejor respuesta posible consultá el capítulo 5 del libro de texto del curso; de forma muy superficial lo que necesitas saber es que la diferencia entre estos tipos de atributos es la forma en que se definen sus valores, los <b>atributos sintetizados</b> <span class="blue-text text-darken-3">-en azul-</span> definen sus valores a partir de sus nodos hijos (hijos en el árbol de análisis sintáctico). Mientras que los <b>atributos heredados</b> <span class="red-text">-en rojo-</span> definen sus valores a partir de la información de los nodos que, dentro del árbol de análisis sintáctico, son sus hermanos o su padre directamente.
 						</p>
+						<div class="col s12 center">
+							<img src="img/atributos.png">
+						</div>
 						<p>
 							De esta manera, podemos decir que los atributos sintetizados son representados por el <code>return</code> de cada producción, así pues si en la declaración de una producción esta se define de tipo Nodo, al final de su cuerpo es necesario que se retorne un objeto de tipo Nodo, estaríamos entonces <b>sintetizando</b> un objeto de tipo Nodo.
 						</p>

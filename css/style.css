@@ -10,7 +10,7 @@ blockquote{
 	border-left: 1px solid #0d47a1;
 }
 
-p{
+p, blockquote{
 	font-weight: 300;
 }
 
@@ -23,4 +23,10 @@ pre
     -moz-tab-size: 4;
     -o-tab-size:   4;
     tab-size:      4;
+}
+
+blockquote{
+	margin-left: 3em;
+	background-color: #e3f2fd;
+	padding: 1em;
 }

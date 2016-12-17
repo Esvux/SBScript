@@ -3,14 +3,13 @@
 <head>
 	<meta charset="utf-8"/>
 	<title>SBScript - Compiladores 2</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css"/>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<style type="text/css">
-		blockquote{
-			border-left-color: #263238;
-		}
-	</style>
+	<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<script type="text/javascript" src="js/code.js"></script>
 </head>
 	<body>
 		<nav>
@@ -58,7 +57,113 @@
 		</nav>
 		<div class="container">
 			<div class="row">
-				<div class="col s12"></div>
+				<div class="col s1 push-s11">
+					<ul class="section table-of-contents" style="top: 200px; position: fixed;">
+						<li><a href="#nodo">Nodo del AST</a></li>
+						<li><a href="#factory">Aplicando FACTORY</a></li>
+						<li><a href="#atributos">Tips para el AST</a></li>
+					</ul>
+				</div>
+				<div class="col s11 pull-s1">
+					<h2 class="thin">AST <small>Abstract Syntax Tree</small></h2>
+					<p>
+						Traducido al español, el árbol de sintaxis abstracta es una estructura que representa la <i>"esencia"</i> de un árbol de análisis de sintaxis, ya que el AST elimina la presencia de nodos innecesarios, nodos que conceptualmente están disponibles en el árbol de análisis de sintaxis, pero que realmente no son necesarios para realizar las acciones. Por ejemplo en una operación aritmética, como <code>3 + 4 * 5</code> durante su análisis, utilizando un analizador ascendente con una gramática ambigua produciría un árbol de análisis sintáctico como el de la izquierda de la siguiente imagen; comparando ese árbol contra el AST (árbol de la derecha) que representa exactamente la misma operación, las ventajas del AST son evidentes.
+					</p>
+					<p class="center">
+						<img src="img/comparacionAST.png">
+					</p>
+					<div id="nodo" class="section scrollspy">
+						<h4 class="thin">Nodo del AST</h4>
+						<p>
+							JavaCC tiene la capacidad de generar un AST por medio del uso de JJTree, en esta guía nos daremos a la tarea de construir un AST propio, ya que hay producciones (como TIPO_VAR) que no representan un nodo representativo del árbol, esto puede sustituirse por un atributo en el nodo, un atributo tipo por ejemplo. Siguiendo buenas prácticas de programación lo primero que se debe hacer es crea un paquete para organizar todas las clases relacionadas con el AST; con el paquete listo es tiempo de crear la clase Nodo, como recomendación podés utilizar una clase similar a la del siguiente diagrama.
+						</p>
+						<p class="center">
+							<img src="img/nodo.png">
+						</p>
+						<p>
+							Lo mejor de crear nuestro propio AST es que cada programador decide qué atributos utilizar, en el código de SBScript decidí agregar un atributo llamado <code>listaAux</code> de tipo <code>List&lt;String&gt;</code> para utilizar solo en algunas instrucciones. No existe una regla para crear los nodos del AST, sin embargo es bueno seguir el siguiente patrón de diseño.
+						</p>
+					</div>
+					<div id="factory" class="section scrollspy">
+						<h4 class="thin">Aplicando patrón de diseño FACTORY</h4>
+						<p>
+							Para homogenizar la creación de los nodos dentro de la gramática de JavaCC es necesario utilizar una clase abstracta cuya única responsabilidad sea crear nodos con una estructura fija. Para ello se crea un método estático para cada <b>"tipo de nodo"</b>, los parámetros para cada método pueden variar y deben de tener un nombre significativo.
+						</p>
+						<blockquote>
+							Que una clase sea declarada como <b>abstract</b> significa que no se pueden crear instancias de dicha clase.<br>
+							Que un método sea declarado como <b>static</b> significa que no se necesita de una instancia para poder llamarlo, basta con colocar el nombre de la clase, luego un punto y después el nombre del método.
+						</blockquote>
+						<p>
+							Aplicando el patrón de diseño de Factory, se puede modular el código para que todos los cambios necesarios en el AST se hagan solamente en la clase <code>FabricaAST.java</code> reduciendo las responsabilidades de la gramática, para que no tenga que crear los nodos, sino que solamente se limite a obtener la información y estructurar los nodos en el AST. A continuación un ejemplo de cómo se utilizó la FabricaAST en la gramática de SBScript.
+						</p>
+<pre class="prettyprint"><code class="language-java">	/**
+	 * Crea el nodo con rol Constantes.SI, su primer hijo sera la condicion, el 
+	 * segundo hijo el cuerpo en caso de que la condicion se cumpla (then) y agrega
+	 * el tercer hijo (cuerpo en caso de que NO se cumpla la condicion) si el 
+	 * parametro cuerpoElse es distinto de null.
+	 * @param cond Nodo que representa la expresion que fungira como condicion.
+	 * @param cuerpoThen Nodo cuerpo asociado al SI
+	 * @param cuerpoElse null o Nodo cuerpo asociado al SINO
+	 * @return El nodo SI.
+	*/
+	public static Nodo creaSi(Nodo cond, Nodo cuerpoThen, Nodo cuerpoElse) {
+		Nodo nodo = new Nodo(Constantes.SI, "Si[Sino]");
+		nodo.addHijo(cond);
+		nodo.addHijo(cuerpoThen);
+		if (cuerpoElse != null) {
+			nodo.addHijo(cuerpoElse);
+		}
+		return nodo;
+	}
+</code></pre>
+						<p>
+							La gramática se limitaba a reconocer las terminales y no terminales, obteniendo la información necesaria para crear el nodo correspondiente a la instrucción SI[SINO].
+						</p>
+<pre class="prettyprint"><code class="language-java">	/**
+	 * Esta producción detecta la existencia de una instrucción de 
+	 * tipo SI y crea la siguiente estructura para el AST (el SINO es
+	 * opcional, por lo tanto su presencia en el AST también lo es).
+	 * {@code SI ::= "Si" "(" EXP ")" CUERPO [ "Sino" CUERPO ]}
+	 *         __________
+	 *        | SI       |
+	 *        |__________|
+	 *           |     _______________
+	 *          (0)---| CONDICION     |
+	 *           |    |_______________|
+	 *          (1)---| CUERPO (SI)   |
+	 *           |    |_______________|
+	 *          (2)---| CUERPO (SINO) |
+	 *                |_______________|
+	 * 
+	 * @return Nodo con rol Constantes.SI.
+	*/
+Nodo SI():{ Nodo cond, si; Nodo sino = null; Token aux; }
+{
+	aux=&lt;PR_SI&gt; "(" cond=EXP() ")" 
+	si=CUERPO() 
+	[ &lt;PR_SINO&gt; sino=CUERPO() ]
+	{ 
+		Nodo nodo = FabricaAST.creaSi(cond, si, sino); 
+		nodo.setUbicacion(aux);
+		return nodo;
+	}
+}
+</code></pre>
+					</div>
+					<div id="factory" class="section scrollspy">
+						<h4 class="thin">Recomendaciones para el AST</h4>
+						<p>
+							Los proyectos de Compiladores 2 son difíciles, pero más que difíciles, son exteeeensoooos, por lo mismo es necesario tener buenas prácticas de programación para no frustarse, para hacer una aplicación facilmente escalable. Por todo lo expuesto hasta ahora, creo que puedo hacer un par de recomendaciones para la creación de un AST versátil y robusto.
+						</p>
+						<ul class="browser-default">
+							<li>Definir constantes para el manejo de roles, subroles y tipos.</li>
+							<li>Crear una clase abstracta en donde se definan todas las constantes.</li>
+							<li>No limitar el número de atributos, pero utilizar unicamente los necesarios.</li>
+							<li>No todas las producciones deben de retornar un nodo del AST.</li>
+							<li>Las primeras veces que se utiliza un AST es de mucha utilidad contar con una herramienta para gráficarlo, se puede utilizar <a href="http://lihuen.linti.unlp.edu.ar/index.php/Introducci%C3%B3n_a_la_sintaxis_dot_(graphviz)">Graphviz</a> por ejemplo.</li>
+						</ul>
+					</div>
+				</div>
 			</div>
 		</div>
 	</body>
