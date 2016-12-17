@@ -110,14 +110,108 @@ PARSER_END(ParserSBScript)
 }
 </code></pre>
 						<p>
-							Como se puede observar cada token está delimitado por los símbolos <b>&lt;</b> y <b>&gt;</b>, dentro de estos símbolos se define el nombre (regularmente en mayúsculas, aunque sin ser obligatorio) seguido de <b>:</b> y luego la expresión regular, cada token está separado uno de otro por un símbolo <b>|</b> (típico OR).
+							Como se puede observar cada token está delimitado por los símbolos <b>&lt;</b> y <b>&gt;</b>, dentro de estos símbolos se define el nombre (regularmente en mayúsculas, aunque sin ser obligatorio) seguido de <b>:</b> y luego la expresión regular, cada token está separado uno de otro por un símbolo <b>|</b> (típico OR), como parte del análisis léxico también se pueden utilizar otras instrucciones para definir, por ejemplo, los caracteres que ignorará el parser o tokens especiales, como los comentarios.
 						</p>
 					</div>
 					<div id="gramatica" class="section scrollspy">
 						<h4 class="thin">La Gramática</h4>
+						<p>
+							Configurado el comportamiento del parser y definidas las expresiones regulares de cada token, ahora es tiempo de declarar cada una de las producciones, para efectos de esto JavaCC tiene una gran ventaja sobre otros analizadores, la forma en que se declaran las producciones brinda facilidad para el uso de atributos y también para la construcción del cuerpo de las producciones, mezclando metacaracteres de las expresiones regulares y caracteres propios de la <a href="https://es.wikipedia.org/wiki/Notaci%C3%B3n_de_Backus-Naur">notación BNF</a>. 
+						</p>
+						<p>
+							Cada producción se define de manera similar a como se define un método en Java, se escribe el tipo de la producción, su identificador, los parámetros con los que contará, un primer juego de llaves para declarar variables con valores iniciales y un segundo juego de llaves que es donde se definirá el contenido. El contenido o cuerpo de la producción se define colocando los <i>no terminales</i> como llamadas a métodos <b>ID()</b> y utilizando los símbolos <b>&lt;ID&gt;</b> para hacer referencia a los <i>terminales</i>, además de birndar la posibilidad de colocar cualquier sucesión de caracteres sin ser especificada en las reglas léxicas por medio del uso de las comillas dobles <b>""</b>.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Producción de ejemplo, reconoce la declaración de variables
+void DEC_GLOBAL():{ /* Variables locales y/o valores iniciales */ }
+{
+	TIPO_VAR() &lt;ID&gt; ( "," &lt;ID&gt; )* [ "=" EXP() ] &lt;PYC&gt;
+}
+</code></pre>
+						<p>
+							En notación BNF la producción anterior sería algo como <code>DEC_GLOBAL ::= TIPO_VAR L_ID ASIGN ";"</code> en donde <code>TIPO_VAR</code>, como en el ejemplo, sería la producción que reconoce un tipo de todo el listado de tipos disponibles para una variable; difiriendo con el ejemplo se deben agregar las producciones adicionales <code>L_ID</code>, que reconoce una lista de identificadores, como lo hace JavaCC con el comodín <b>*</b> y <code>ASIGN</code> que representaría la opcionalidad del valor asignado, que JavaCC reemplaza con los comodines <b>[ ]</b>.
+						</p>
+						<p>
+							Dentro del cuerpo de cada producción se puede interactuar con los valores de cada componente, tanto terminales como no terminales. Para acceder al valor de los <b>terminales</b> se deben declarar (en la sección de las primeras llaves de cada método) tantas variables de tipo <b>Token</b> como elementos terminales se desee acceder sin interferir entre ellos, para luego utilizar el caracter <b>=</b> y acceder al token que cada terminal representa. Así mismo se puede acceder a los valores de los no terminales declarando variables locales del tipo que corresponda a cada no terminal en su definición y utilizando el símbolo <b>=</b> de la misma forma para asignar el valor a la variable que corresponde.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Acceder a los valores de los componentes
+void DEC_GLOBAL():{ Token id; Token aux; String tipo; }
+{
+	tipo=TIPO_VAR() id=&lt;ID&gt; ( "," extra=&lt;ID&gt; )* [ "=" EXP() ] &lt;PYC&gt;
+}
+</code></pre>
+						<p>
+							Al terminar de reconocer el ";" del final se tendría a disposición los valores del token <b>ID</b>, la cadena que representa el tipo de las variables (asumiendo que la producción <code>TIPO_VAR</code> regresa un <code>String</code>); pero te preguntarás ¿qué hago con los valores que ya obtuve? pues para poder utilizar esos valores, JavaCC brinda la posibilidad de insertar acciones como código java en cualquier parte del cuerpo de la producción, agregando un juego de llaves <b>{ }</b> dentro de las cuales se puede colocar cualquier sentencia de código java que utilice los valores disponibles al gusto del programador.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Incorporación de acciones
+void DEC_GLOBAL():{ Token id; Token aux; String tipo; }
+{
+	tipo=TIPO_VAR() id=&lt;ID&gt;
+		{ System.out.println(tipo + " : " + id.image); }
+	( 
+		"," extra=&lt;ID&gt; 
+		{ System.out.println(extra + " : " + id.image); }
+	)* 
+	[ 
+		"=" EXP() 
+		{ System.out.println("Variables con valor asignado..."); }
+	] 
+	&lt;PYC&gt;
+}
+</code></pre>
+						<p>
+							Pero qué serían las traducciones dirigidas por la sintaxis sin la posibilidad de utilizar atributos, para saber cómo funcionan los atributos en JavaCC existe la siguiente sección en donde se expone una forma práctica de implementar atributos heredados en JavaCC, sin dejar de lado los atributos sintetizados.
+						</p>
 					</div>
 					<div id="atributos" class="section scrollspy">
 						<h4 class="thin">Los Atributos</h4>
+						<p>
+							Si ya has llevado alguna vez el curso de Compi2, sabrás que en las traducciones dirigidas por la sintaxis existen dos tipos de atributos, los sintetizados y los heredados, cuál utilizar, cuál es la diferencia entre ellos, para tener la mejor respuesta posible consultá el capítulo 5 del libro de texto del curso; de forma muy superficial lo que necesitas saber es que la diferencia entre estos tipos de atributos es la forma en que se definen sus valores, los <b>atributos sintetizados</b> definen sus valores a partir de sus nodos hijos (hijos en el árbol de análisis sintáctico). Mientras que los <b>atributos heredados</b> definen sus valores a partir de la información de los nodos que, dentro del árbol de análisis sintáctico, son sus hermanos o su padre directamente.
+						</p>
+						<p>
+							De esta manera, podemos decir que los atributos sintetizados son representados por el <code>return</code> de cada producción, así pues si en la declaración de una producción esta se define de tipo Nodo, al final de su cuerpo es necesario que se retorne un objeto de tipo Nodo, estaríamos entonces <b>sintetizando</b> un objeto de tipo Nodo.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Ejemplo de atributo sintetizado
+String TIPO_VAR():{ Token tok; String tipo; }
+{
+	( 
+		tok=<T_NUM> 
+		{ tipo = tok.image; }
+	| 
+		tok=<T_STR> 
+		{ tipo = tok.image; }
+	| 
+		tok=<T_BOOL>
+		{ tipo = tok.image; }
+	)
+	// Sintetizando el tipo...
+	{ return tipo; }
+}
+</code></pre>
+						<p>
+							La estrategia de JavaCC para implementar atributos heredados es definir los atributos heredados como parámetros en la o las producciones en donde son necesarios; por ejemplo, asumiendo que se desea realizar una declaración de variables con esta producción <code>DECLARA ::= TIPO_VAR L_ID</code>, la acción deseada, como en uno de los ejemplos anteriores, es imprimir el tipo y el identificador de cada variable, para esto se obtendrá el tipo y se heredará a la producción <code>L_ID</code> para que pueda ser utilizado en dicha producción.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Ejemplo de atributo heredado
+void DECLARA():{ String tipo; }
+{
+	// Se envía el atributo obtenido de TIPO_VAR
+	// (hermano de L_ID) como atributo heredado
+	tipo=TIPO_VAR() L_ID(tipo)
+}
+
+// Declaración del atributo heredado
+void L_ID(String tipo):{ Token tok; }
+{
+	tok=&lt;ID&gt;
+	{ System.out.println(tipo + " : " + tok.image); }
+	( 
+		"," tok=&lt;ID&gt; 
+		{ System.out.println(tipo + " : " + tok.image); } 
+	)*
+}
+</code></pre>
+						<p>
+							Durante el desarrollo de proyectos grandes, como los proyectos de Compi2, es muy útil dejar al mínimo necesario el código que va en las producciones, para eso existen diferentes patrones de diseño de software entre los que están <code>singleton</code> y <code>factory</code>.
+						</p>
 					</div>
 				</div>
 			</div>
