@@ -3,14 +3,13 @@
 <head>
 	<meta charset="utf-8"/>
 	<title>SBScript - Compiladores 2</title>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/css/materialize.min.css"/>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.8/js/materialize.min.js"></script>
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-	<style type="text/css">
-		blockquote{
-			border-left-color: #263238;
-		}
-	</style>
+	<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
+	<script type="text/javascript" src="js/code.js"></script>
 </head>
 	<body>
 		<nav>
@@ -58,7 +57,80 @@
 		</nav>
 		<div class="container">
 			<div class="row">
-				<div class="col s12"></div>
+				<div class="col s12">
+					<h2 class="thin">Intérprete</h2>
+					<p>
+						Si tanto un intérprete como un compilador utilizan un analizador léxico, un analizador sintáctico y muchas otras cosas en común ¿qué los diferencia? un compilador, genera código objeto y ese proceso se detiene con la presencia de errores, mientras que un intérprete no genera código objeto y ejecuta las acciones independientemente si la entrada cuenta con errores. Ejemplos de algunos lenguajes compilados son Java, C#, C; Mientras que en el bando de los lenguajes intérpretados están lenguajes como php, Javascript, Ruby, entre otros. Con las diferencias claras, ¿qué necesitás para crear un intérprete?
+					</p>
+					<div id="paquetes" class="section scrollspy">
+						<h4 class="thin">Los paquetes</h4>
+						<p>
+							El diagrama de componentes que a continuación se presenta muestra la relacion que existe entre los paquetes, a grandes rasgos podemos definir el contenido de cada paquete de la siguiente forma.
+						</p>
+						<div class="col s12">
+							<ul class="tabs">
+								<li class="tab col s4"><a href="#paqGeneral" class="blue-text text-darken-4 active">Componentes generales</a></li>
+								<li class="tab col s4"><a href="#paqInterprete" class="blue-text text-darken-4">Intérprete</a></li>
+								<li class="tab col s4"><a href="#paqAST" class="blue-text text-darken-4">AST</a></li>
+							</ul>
+						</div>
+						<div id="paqGeneral" class="col s12">
+							<p class="center"><img src="img/paquetes.png"></p>
+						</div>
+						<div id="paqInterprete" class="col s12">
+							<p class="center"><img src="img/paqueteInterprete.png"></p>
+						</div>
+						<div id="paqAST" class="col s12">
+							<p class="center"><img src="img/paqueteAST.png"></p>
+						</div>
+					</div>
+					<div id="expresiones" class="section scrollspy">
+						<h4 class="thin">Las expresiones</h4>
+						<p>
+							La resolución de expresiones se realiza utilizando un objeto <code>Resultado</code> entre métodos y evaluando los tipos de cada nodo del AST, iniciando con una instancia de <code>Expresion</code> que recibirá como nodo hijo el nodo que se desea resolver.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Así inicia la resolución de una expresión
+// Donde ctx es el objeto Contexto que almacena las variables locales
+Expresion exp = new Expresion(nodoExp);
+Resultado res = exp.resolver(ctx);
+</code></pre>
+						<p>
+							De esta manera el método ejecutar de la clase <code>Expresion</code> realiza la comparación del rol del nodo que desea resolver y si es, por ejemplo un nodo de rol ARITMETICO, se crea una nueva instancia de <code>ExpresionAritmetica</code> y se le envían como parámetros en el contructor los hijos 0 y 1 del nodo principal de la actual instancia, además del operador que está almacenado en el atributo subrol del nodo principal.
+						</p>
+<pre class="prettyprint"><code class="language-java">// Así se resolvería una expresión aritmética
+// Donde ctx es el objeto Contexto que almacena las variables locales
+ExpresionAritmetica exp = new ExpresionAritmetica(nodo.getHijo(0), nodo.getHijo(1), nodo.getSubrol());
+Resultado res = exp.resolver(ctx);
+</code></pre>
+						<p>
+							Así las expresiones se resuelven llamandose entre ellas de forma recursiva hasta llegar a un nodo hoja, que podrián ser valores nativos, identificadores de variables o una llamada a métodos.
+						</p>
+						<p class="center">
+							<img src="img/clasesExpresion.png">
+						</p>
+						<p>
+							Este es el diagrama de clases en donde se ejemplifica como es que las clases se dividen según el tipo de operación y como todas comparten cierto comportamiento en común se asocia una clase padrea a todas, esta clase padre es la clase <code>ExpresionAbstracta</code>.
+						</p>
+					</div>
+					<div id="instrucciones" class="section scrollspy">
+						<h4 class="thin">Las instrucciones</h4>
+						<p>
+							Para las instrucciones se sigue un patrón similar que con las expresiones, todas las instrucciones comparten cierto comportamiento en común, entonces ese comportamiento en común se agrupa en la clase <code>InstruccionAbstracta</code>, de allí en más todas las clases que heredan de la clase abstracta deben realizar su propia implementación del método <code>ejecutar(Contexto ctx, int nivel)</code> que devuelve un objeto <code>Resultado</code>. Es por medio del objeto Resultado que tanto instrucciones como expresiones comparten su funcionalidad, instrucciones depende de expresiones, por ejemplo al momento de encontrar una instrucción de tipo <code>Retorno</code>, de forma paralela expresiones depende de instrucciones al encontrar una operación que involucra una llamada a métodos.
+						</p>
+						<p class="center">
+							<img src="img/clasesInstruccion.png" width="1000px">
+						</p>
+						<p>
+							Dentro de las instrucciones, la instrucción que orquesta el funcionamiento de todas las demás es la clase <code>InstruccionCuerpo</code> ya que en ella se analizan los roles de cada instrucción (proveniente del AST) y se van realizando instancias de cada clase según su rol.
+						</p>
+					</div>
+					<div id="contexto" class="section scrollspy">
+						<h4 class="thin">El contexto</h4>
+						<p>
+							Como en los intérpretes no existe una tabla de símbolos como tal, su lugar lo ocupa un objeto al que he decidido llamar <code>Contexto</code>, cuya función es almacenar las variables que existen a lo largo de la ejecución del programa. Este óbjeto debe ser limpiado de las variables que se han declarado en cierto ámbito cuando el foco de la ejecución abandona dicho ámbito.
+						</p>
+					</div>
+				</div>
 			</div>
 		</div>
 	</body>
